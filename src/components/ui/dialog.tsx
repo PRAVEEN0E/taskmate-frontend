@@ -19,19 +19,19 @@ export function FormModal({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[#19183B]/35 backdrop-blur-sm transition-opacity duration-200" />
-        <DialogPrimitive.Content className="clay-card fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[32px] border-2 border-white bg-[#F5F3FF] p-8 shadow-[16px_16px_36px_#c2bfdf,-12px_-12px_28px_#ffffff]">
-          <DialogPrimitive.Title className="pr-8 text-xl font-bold tracking-tight text-[#19183B]">
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-md transition-opacity duration-200" />
+        <DialogPrimitive.Content className="glass fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/20 bg-[#141d2e]/85 p-7 shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+          <DialogPrimitive.Title className="pr-8 text-xl font-semibold tracking-tight text-foreground">
             {title}
           </DialogPrimitive.Title>
-          <DialogPrimitive.Description className="mt-1.5 text-xs text-[#666584] leading-relaxed font-medium">
+          <DialogPrimitive.Description className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
             {description ?? 'Manage your personal workspace.'}
           </DialogPrimitive.Description>
           <DialogPrimitive.Close
-            className="absolute right-6 top-6 rounded-2xl border border-white bg-[#E9E8FF] p-2 text-[#666584] shadow-[3px_3px_8px_#cecced,-2px_-2px_6px_#ffffff] transition hover:text-[#19183B] hover:-translate-y-0.5"
+            className="absolute right-5 top-5 rounded-xl border border-white/10 bg-white/5 p-1.5 text-muted-foreground transition hover:bg-white/15 hover:text-foreground"
             aria-label="Close dialog"
           >
-            <X size={16} />
+            <X size={18} />
           </DialogPrimitive.Close>
           <div className="mt-6">{children}</div>
         </DialogPrimitive.Content>
