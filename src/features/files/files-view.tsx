@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { GlassCard, PageHeader, EmptyState, StatCard } from '@/components/shared';
@@ -17,6 +17,9 @@ import {
   FileCode,
   FileSpreadsheet,
   Download,
+  Upload,
+  Link as LinkIcon,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,11 +35,15 @@ interface FileAsset {
 
 export function FilesView() {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'device' | 'url'>('device');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [bytes, setBytes] = useState(250000);
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // 1. Fetch Files
   const { data: rawFiles = [], isLoading } = useQuery<FileAsset[]>({
@@ -67,9 +74,14 @@ export function FilesView() {
       queryClient.invalidateQueries({ queryKey: ['files'] });
       queryClient.invalidateQueries({ queryKey: ['file-storage'] });
       setModalOpen(false);
-      setName('');
-      setUrl('');
+      resetForm();
       toast.success('Asset stored successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to upload asset');
+    },
+    onSettled: () => {
+      setIsProcessing(false);
     },
   });
 
@@ -85,10 +97,81 @@ export function FilesView() {
     },
   });
 
+  function resetForm() {
+    setName('');
+    setUrl('');
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsProcessing(false);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds 10MB limit.');
+      return;
+    }
+
+    setSelectedFile(file);
+    if (!name) {
+      setName(file.name);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    if (activeTab === 'device') {
+      if (!selectedFile) {
+        toast.error('Please choose a file from your device.');
+        setIsProcessing(false);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = reader.result as string;
+        uploadRecordMutation.mutate({
+          name: name || selectedFile.name,
+          url: base64Data,
+          publicId: `device_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          bytes: selectedFile.size,
+          resourceType: selectedFile.type.startsWith('image/') ? 'image' : 'raw',
+          mimeType: selectedFile.type || 'application/octet-stream',
+        });
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read file from device.');
+        setIsProcessing(false);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      if (!url) {
+        toast.error('Please enter a valid URL.');
+        setIsProcessing(false);
+        return;
+      }
+
+      uploadRecordMutation.mutate({
+        name,
+        url,
+        publicId: `upload_${Date.now()}`,
+        bytes: Number(bytes),
+        resourceType: 'raw',
+        mimeType: name.endsWith('.png') || name.endsWith('.jpg') ? 'image/png' : 'application/pdf',
+      });
+    }
+  }
+
   // File Icon helper
   const getFileIcon = (mime: string) => {
     if (mime.includes('image')) return <ImageIcon size={20} className="text-emerald-400" />;
     if (mime.includes('code') || mime.includes('json')) return <FileCode size={20} className="text-violet-400" />;
+    if (mime.includes('spreadsheet') || mime.includes('csv') || mime.includes('excel'))
+      return <FileSpreadsheet size={20} className="text-emerald-400" />;
     return <FileText size={20} className="text-sky-400" />;
   };
 
@@ -148,7 +231,10 @@ export function FilesView() {
       <GlassCard className="p-6">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Asset Repository</h3>
         {files.length === 0 ? (
-          <EmptyState title="No files stored" description="Upload document or image references to keep your workspace organized." />
+          <EmptyState
+            title="No files stored"
+            description="Upload files from your device or save web URLs to keep your workspace organized."
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {files.map((f) => (
@@ -158,13 +244,15 @@ export function FilesView() {
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       {getFileIcon(f.mimeType)}
-                      <span className="text-xs font-bold line-clamp-1">{f.name}</span>
+                      <span className="text-xs font-bold truncate" title={f.name}>
+                        {f.name}
+                      </span>
                     </div>
                     <button
                       onClick={() => deleteMutation.mutate(f.id)}
-                      className="text-muted-foreground hover:text-rose-400 transition"
+                      className="text-muted-foreground hover:text-rose-400 transition shrink-0"
                       title="Delete asset"
                     >
                       <Trash2 size={14} />
@@ -174,14 +262,26 @@ export function FilesView() {
 
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-2.5 text-[11px] text-muted-foreground">
                   <span>{(Number(f.bytes) / 1024).toFixed(1)} KB</span>
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sky-400 hover:underline font-medium"
-                  >
-                    <ExternalLink size={12} /> Open
-                  </a>
+                  <div className="flex items-center gap-2">
+                    {f.url.startsWith('data:') ? (
+                      <a
+                        href={f.url}
+                        download={f.name}
+                        className="flex items-center gap-1 text-emerald-400 hover:underline font-medium"
+                      >
+                        <Download size={12} /> Download
+                      </a>
+                    ) : (
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-sky-400 hover:underline font-medium"
+                      >
+                        <ExternalLink size={12} /> Open
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -190,48 +290,129 @@ export function FilesView() {
       </GlassCard>
 
       {/* Modal */}
-      <FormModal open={modalOpen} onOpenChange={setModalOpen} title="Upload Asset" description="Record a file link or asset.">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            uploadRecordMutation.mutate({
-              name,
-              url,
-              publicId: `upload_${Date.now()}`,
-              bytes: Number(bytes),
-              resourceType: 'raw',
-              mimeType: name.endsWith('.png') || name.endsWith('.jpg') ? 'image/png' : 'application/pdf',
-            });
-          }}
-          className="space-y-4"
-        >
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">File Name</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. system_architecture_diagram.png"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Asset URL</label>
-            <input
-              type="url"
-              required
-              placeholder="https://res.cloudinary.com/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
+      <FormModal
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) resetForm();
+        }}
+        title="Upload Asset"
+        description="Choose a file from your computer/device or save a file URL."
+      >
+        <div className="mb-4 flex gap-2 border-b border-border/50 pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab('device')}
+            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+              activeTab === 'device'
+                ? 'bg-[#7864F6] text-white shadow-sm'
+                : 'bg-white/5 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Upload size={14} /> From Device
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('url')}
+            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+              activeTab === 'url'
+                ? 'bg-[#7864F6] text-white shadow-sm'
+                : 'bg-white/5 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <LinkIcon size={14} /> From Web URL
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {activeTab === 'device' ? (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Select File</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="device-file-input"
+              />
+              <label
+                htmlFor="device-file-input"
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-white/[0.03] p-6 text-center cursor-pointer transition hover:border-[#7864F6]/50 hover:bg-white/[0.06]"
+              >
+                {selectedFile ? (
+                  <>
+                    <CheckCircle2 size={32} className="text-emerald-400" />
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{selectedFile.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {(selectedFile.size / 1024).toFixed(1)} KB · Click to change file
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud size={32} className="text-[#8ea9e8]" />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">Click or browse from your device</p>
+                      <p className="text-[11px] text-muted-foreground">Images, PDFs, documents, audio (up to 10MB)</p>
+                    </div>
+                  </>
+                )}
+              </label>
+
+              <div className="mt-3">
+                <label className="text-xs font-medium text-muted-foreground">Custom Display Name (optional)</label>
+                <input
+                  type="text"
+                  placeholder={selectedFile ? selectedFile.name : 'e.g. project_report.pdf'}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">File Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. system_architecture_diagram.png"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Asset URL</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://example.com/file.pdf"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setModalOpen(false);
+                resetForm();
+              }}
+              disabled={isProcessing}
+            >
               Cancel
             </Button>
-            <Button type="submit">Store Asset</Button>
+            <Button type="submit" disabled={isProcessing}>
+              {isProcessing ? 'Uploading...' : 'Save File'}
+            </Button>
           </div>
         </form>
       </FormModal>
