@@ -299,11 +299,11 @@ export function TasksView() {
         description="Daily driver to plan, track, divide with AI, and complete what matters."
         action={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-xl border border-border bg-black/30 p-1">
+            <div className="flex rounded-xl border border-white/15 bg-white/[0.04] p-1 backdrop-blur-md">
               <button
                 onClick={() => setViewMode('LIST')}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  viewMode === 'LIST' ? 'bg-sky-500/20 text-sky-200 shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  viewMode === 'LIST' ? 'bg-[#8ea9e8]/20 text-[#8ea9e8] shadow-sm border border-[#8ea9e8]/30' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <LayoutList size={14} /> List
@@ -311,13 +311,13 @@ export function TasksView() {
               <button
                 onClick={() => setViewMode('BOARD')}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  viewMode === 'BOARD' ? 'bg-sky-500/20 text-sky-200 shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  viewMode === 'BOARD' ? 'bg-[#8ea9e8]/20 text-[#8ea9e8] shadow-sm border border-[#8ea9e8]/30' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Kanban size={14} /> Board
               </button>
             </div>
-            <Button onClick={() => setAdvancedModal(true)} className="gap-2">
+            <Button variant="default" onClick={() => setAdvancedModal(true)} className="gap-2">
               <Plus size={16} /> Advanced Task
             </Button>
           </div>
@@ -326,70 +326,70 @@ export function TasksView() {
 
       {/* 2. Stats Dashboard Strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-white/[0.025] p-4">
+        <GlassCard hover className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>To Do</span>
-            <CheckSquare size={16} className="text-sky-300" />
+            <CheckSquare size={16} className="text-[#8ea9e8]" />
           </div>
-          <div className="mt-2 text-2xl font-bold">{stats.total - stats.completed}</div>
+          <div className="mt-2 text-2xl font-bold text-foreground">{stats.total - stats.completed}</div>
           <p className="mt-1 text-[11px] text-muted-foreground">Items in progress</p>
-        </div>
+        </GlassCard>
 
-        <div className="rounded-2xl border border-border bg-white/[0.025] p-4">
+        <GlassCard hover className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Due Today</span>
             <Flame size={16} className="text-amber-400" />
           </div>
           <div className="mt-2 text-2xl font-bold text-amber-300">{stats.dueToday}</div>
           <p className="mt-1 text-[11px] text-muted-foreground">Focus for today</p>
-        </div>
+        </GlassCard>
 
-        <div className="rounded-2xl border border-border bg-white/[0.025] p-4">
+        <GlassCard hover className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Overdue</span>
             <AlertTriangle size={16} className="text-rose-400" />
           </div>
           <div className="mt-2 text-2xl font-bold text-rose-300">{stats.overdue}</div>
           <p className="mt-1 text-[11px] text-muted-foreground">Need urgent attention</p>
-        </div>
+        </GlassCard>
 
-        <div className="rounded-2xl border border-border bg-white/[0.025] p-4">
+        <GlassCard hover className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Progress</span>
             <span className="font-semibold text-emerald-400">{stats.rate}%</span>
           </div>
           <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: `${stats.rate}%` }} />
+            <div className="h-full bg-gradient-to-r from-[#8ea9e8] to-emerald-400 transition-all duration-300" style={{ width: `${stats.rate}%` }} />
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">{stats.completed} of {stats.total} closed</p>
-        </div>
+        </GlassCard>
       </div>
 
       {/* 3. Inline Quick-Add Bar (Todoist Style) */}
       <GlassCard className="p-3.5">
         <form onSubmit={handleQuickAdd} className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-1 items-center gap-2">
-            <Plus size={16} className="text-sky-400 shrink-0" />
+          <div className="flex flex-1 items-center gap-2.5">
+            <Plus size={16} className="text-[#8ea9e8] shrink-0" />
             <input
               type="text"
               placeholder="What needs to be done? Type and press Enter..."
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
-              className="w-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
+              className="w-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none text-foreground"
             />
           </div>
           <div className="flex items-center gap-2">
             <select
               value={quickPriority}
               onChange={(e) => setQuickPriority(e.target.value as any)}
-              className="rounded-lg border border-border bg-black/30 px-2.5 py-1 text-xs focus:outline-none"
+              className="rounded-xl border border-white/15 bg-white/[0.06] px-2.5 py-1 text-xs text-foreground focus:outline-none backdrop-blur-sm"
             >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="LOW" className="bg-[#101827]">Low Priority</option>
+              <option value="MEDIUM" className="bg-[#101827]">Medium Priority</option>
+              <option value="HIGH" className="bg-[#101827]">High Priority</option>
+              <option value="URGENT" className="bg-[#101827]">Urgent Priority</option>
             </select>
-            <Button size="sm" type="submit" disabled={!quickTitle.trim() || createTaskMutation.isPending}>
+            <Button size="sm" variant="default" type="submit" disabled={!quickTitle.trim() || createTaskMutation.isPending}>
               Add
             </Button>
           </div>
@@ -413,7 +413,7 @@ export function TasksView() {
               onClick={() => setFilterTab(tab)}
               className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition ${
                 filterTab === tab
-                  ? 'bg-sky-500/20 text-sky-200 border border-sky-400/30'
+                  ? 'bg-[#8ea9e8]/20 text-[#8ea9e8] border border-[#8ea9e8]/30 shadow-sm'
                   : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
               }`}
             >

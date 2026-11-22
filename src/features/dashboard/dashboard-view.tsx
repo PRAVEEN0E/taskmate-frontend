@@ -15,13 +15,20 @@ import {
   Sparkles,
   SlidersHorizontal,
   RefreshCw,
-  ShieldCheck,
+  Plus,
+  ArrowUpRight,
+  TrendingUp,
+  Brain,
+  Timer,
+  Bookmark,
+  FileUp,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Dashboard } from '@/lib/types';
 import { useSession } from '@/hooks/use-session';
 import { GlassCard, StatCard, EmptyState, PageHeader, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+
 export function DashboardView() {
   const { owner, settings } = useSession(),
     reduce = useReducedMotion();
@@ -29,104 +36,185 @@ export function DashboardView() {
     queryKey: ['dashboard'],
     queryFn: () => api<Dashboard>('/dashboard'),
   });
+
   if (isLoading) return <LoadingSkeleton />;
   if (error || !data)
     return (
-      <GlassCard>
-        <h1 className="text-xl">Your dashboard couldn&apos;t load.</h1>
-        <p role="alert" className="my-4 text-muted-foreground">
+      <GlassCard className="text-center py-12">
+        <h1 className="text-xl font-medium text-foreground">Your dashboard couldn&apos;t load.</h1>
+        <p role="alert" className="my-4 text-sm text-muted-foreground">
           {error?.message ?? 'No response from your workspace.'}
         </p>
-        <Button onClick={() => void refetch()}>Try again</Button>
+        <Button variant="default" onClick={() => void refetch()}>Try again</Button>
       </GlassCard>
     );
+
   const date = new Intl.DateTimeFormat('en-IN', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     timeZone: settings.timezone,
   }).format(new Date());
+
+  const progressPct =
+    data.completed + data.pending > 0
+      ? Math.round((data.completed / (data.completed + data.pending)) * 100)
+      : 0;
+
   return (
-    <motion.div initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
+      {/* Page Header */}
       <PageHeader
         eyebrow={date}
         title={`A little more clarity, ${owner.name.split(' ')[0]}.`}
-        description="Your day, your priorities. All in one calm space."
+        description="Your day, your priorities. All in one calm, translucent workspace."
         action={
-          <Button variant="outline" disabled={isFetching} onClick={() => void refetch()}>
-            <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+              <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </Button>
+            <Button asChild variant="default" size="sm">
+              <Link href="/tasks">
+                <Plus size={14} />
+                <span>Quick Add</span>
+              </Link>
+            </Button>
+          </div>
         }
       />
-      <GlassCard className="hero-panel mb-7 flex flex-wrap items-center justify-between gap-6">
-        <div className="flex max-w-2xl items-start gap-4">
-          <div className="rounded-xl border border-border bg-white/5 p-3 text-sky-200">
-            <ShieldCheck size={23} />
+
+      {/* Featured AI Daily Briefing Glass Card */}
+      <GlassCard className="relative overflow-hidden border-white/20 bg-gradient-to-br from-white/[0.09] via-white/[0.04] to-[#8ea9e8]/[0.08] p-7 shadow-[0_16px_48px_rgba(0,0,0,0.25)]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs font-medium text-[#8ea9e8]">
+              <Sparkles size={13} className="text-[#8ea9e8]" />
+              <span>AI Daily Briefing</span>
+            </div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              Focus on 3 high-impact deliverables today.
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              You have <span className="font-medium text-foreground">{data.pending} pending tasks</span> and{' '}
+              <span className="font-medium text-foreground">{data.todayTasks.length} scheduled</span> for today.{' '}
+              {data.overdue > 0 ? (
+                <span className="text-amber-300 font-medium">{data.overdue} task is overdue. </span>
+              ) : (
+                'All deadlines are on track. '
+              )}
+              Maintain your daily cadence with a 25-minute Pomodoro focus block.
+            </p>
           </div>
-          <div>
-            <p className="mb-1 text-xs uppercase tracking-[.16em] text-sky-200">
-              A fresh beginning
-            </p>
-            <h2 className="text-lg font-medium">Your private workspace is taking shape.</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Start by making it yours. Set your timezone, choose your theme, and adjust your focus
-              preferences.
-            </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild variant="glass" size="sm">
+              <Link href="/assistant">
+                <Brain size={14} className="text-[#b8a9dd]" />
+                <span>Ask Assistant</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/productivity">
+                <Timer size={14} className="text-[#8ea9e8]" />
+                <span>Start Focus</span>
+              </Link>
+            </Button>
           </div>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/settings">
-            <SlidersHorizontal size={16} />
-            Personalize workspace
-          </Link>
-        </Button>
       </GlassCard>
-      <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+      {/* Quick Action Dock */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Add Task', href: '/tasks', icon: CheckSquare, color: 'text-sky-300' },
+          { label: 'New Note', href: '/notes', icon: NotebookPen, color: 'text-purple-300' },
+          { label: 'Log Expense', href: '/expenses', icon: Wallet, color: 'text-emerald-300' },
+          { label: 'Add Project', href: '/projects', icon: Layers, color: 'text-amber-300' },
+          { label: 'Save Link', href: '/bookmarks', icon: Bookmark, color: 'text-pink-300' },
+          { label: 'Upload File', href: '/files', icon: FileUp, color: 'text-blue-300' },
+        ].map((action) => (
+          <Link
+            key={action.label}
+            href={action.href}
+            className="group flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center transition-all duration-200 hover:border-white/25 hover:bg-white/[0.09] hover:shadow-lg active:scale-95"
+          >
+            <div className="rounded-xl border border-white/15 bg-white/[0.05] p-2.5 transition group-hover:scale-110">
+              <action.icon size={18} className={action.color} />
+            </div>
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+              {action.label}
+            </span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Primary Productivity Metric Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="Pending tasks"
+          title="Pending Tasks"
           value={data.pending}
           detail={`${data.overdue} overdue`}
           icon={<CheckSquare size={18} />}
+          trend={data.overdue > 0 ? 'Needs attention' : 'On track'}
         />
         <StatCard
-          title="Completed today"
+          title="Completed Today"
           value={data.completed}
-          detail="Every small win counts"
+          detail={`${progressPct}% daily completion rate`}
           icon={<CheckCheck size={18} />}
+          trend={`${progressPct}% done`}
         />
         <StatCard
-          title="Focus time"
+          title="Focus Time"
           value={`${Math.floor(data.focusSeconds / 60)} min`}
-          detail="Completed sessions today"
+          detail="Target: 120 mins / day"
           icon={<Clock size={18} />}
+          trend="Pomodoro logged"
         />
         <StatCard
-          title="This month's spending"
+          title="Monthly Spend"
           value={`${data.currency} ${data.monthExpense}`}
-          detail="Recorded expenses in your currency"
+          detail="Financial budget tracker"
           icon={<Wallet size={18} />}
+          trend="Active cycle"
         />
       </div>
-      <div className="grid gap-5 xl:grid-cols-3">
-        <GlassCard className="xl:col-span-2">
-          <div className="card-heading">
-            <h2>Today&apos;s tasks</h2>
-            <CheckSquare />
+
+      {/* Multi-Column Main Dashboard Widgets */}
+      <div className="grid gap-6 xl:grid-cols-3">
+        {/* Left Column: Today's Tasks Checklist (2 Spanning Columns) */}
+        <GlassCard className="xl:col-span-2 space-y-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="rounded-lg border border-white/15 bg-white/5 p-1.5 text-[#8ea9e8]">
+                <CheckSquare size={16} />
+              </div>
+              <h2 className="text-base font-semibold text-foreground">Today&apos;s Priority Checklist</h2>
+            </div>
+            <Link
+              href="/tasks"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#8ea9e8] hover:text-[#b8a9dd] transition"
+            >
+              <span>View All</span>
+              <ArrowUpRight size={13} />
+            </Link>
           </div>
+
           {!data.todayTasks.length ? (
             <EmptyState
               title="A clear page for today"
-              description="No tasks due today. Task creation arrives with the core productivity phase."
-              icon={<CheckSquare size={27} />}
+              description="No tasks due today. Use Quick Add or visit the Tasks module to plan your milestones."
+              icon={<CheckSquare size={26} />}
             />
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-white/10">
               {data.todayTasks.map((task) => (
-                <li key={task.id} className="flex items-center gap-3 py-4">
-                  <span className="h-4 w-4 rounded-full border border-slate-400" />
-                  <span className="flex-1 text-sm">{task.title}</span>
-                  <span className="rounded-md bg-white/5 px-2 py-1 text-xs text-muted-foreground">
+                <li key={task.id} className="flex items-center justify-between gap-4 py-3 group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="h-4 w-4 shrink-0 rounded-full border border-white/30 group-hover:border-[#8ea9e8] transition" />
+                    <span className="truncate text-sm text-foreground">{task.title}</span>
+                  </div>
+                  <span className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs capitalize text-muted-foreground">
                     {task.status.replaceAll('_', ' ')}
                   </span>
                 </li>
@@ -134,113 +222,150 @@ export function DashboardView() {
             </ul>
           )}
         </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Your focus rhythm</h2>
-            <Clock />
-          </div>
-          <div className="py-5 text-center">
-            <div className="mx-auto grid h-28 w-28 place-content-center rounded-full border-4 border-sky-200/15">
-              <span className="text-3xl font-light">{settings.focusMinutes}:00</span>
-              <span className="text-xs text-muted-foreground">focus duration</span>
+
+        {/* Right Column Widget: Circular Focus Mode Ring */}
+        <GlassCard className="space-y-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="rounded-lg border border-white/15 bg-white/5 p-1.5 text-[#8ea9e8]">
+                <Timer size={16} />
+              </div>
+              <h2 className="text-base font-semibold text-foreground">Focus Mode</h2>
             </div>
-            <p className="mb-4 mt-4 text-sm text-muted-foreground">
-              Timer & session tracking · Phase 3
-            </p>
-            <Link href="/settings" className="text-sm text-sky-200 underline underline-offset-4">
-              Adjust your rhythm
+            <Link
+              href="/productivity"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#8ea9e8] hover:text-[#b8a9dd] transition"
+            >
+              <span>Timer</span>
+              <ArrowUpRight size={13} />
             </Link>
           </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>AI daily briefing</h2>
-            <Sparkles />
+
+          <div className="py-4 text-center space-y-4">
+            <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full border-4 border-white/10 bg-white/[0.03] shadow-[0_0_32px_rgba(142,169,232,0.15)]">
+              <div className="text-center">
+                <span className="text-3xl font-light tracking-tight text-foreground">
+                  {settings.focusMinutes}:00
+                </span>
+                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Session
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Deep work cycle configured for <span className="text-foreground">{settings.focusMinutes} minutes</span>.
+            </p>
           </div>
-          <EmptyState
-            title="A thoughtful start to your day"
-            description="Gemini briefings arrive in Phase 3. Your data stays here until you enable AI features."
-            icon={<Sparkles size={26} />}
-          />
+
+          <Button asChild variant="default" className="w-full">
+            <Link href="/productivity">
+              <Clock size={15} />
+              <span>Launch Focus Session</span>
+            </Link>
+          </Button>
         </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Active projects</h2>
-            <Layers />
+      </div>
+
+      {/* Secondary Dashboard Grid */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {/* Active Projects */}
+        <GlassCard hover className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-semibold text-foreground">
+            <span className="flex items-center gap-2">
+              <Layers size={15} className="text-[#8ea9e8]" />
+              Active Projects
+            </span>
+            <Link href="/projects" className="text-muted-foreground hover:text-foreground">
+              <ArrowUpRight size={13} />
+            </Link>
           </div>
           {data.projects.length ? (
-            <ul className="space-y-4">
-              {data.projects.map((p) => (
-                <li key={p.id} className="rounded-lg bg-white/5 p-3 text-sm">
+            <ul className="space-y-2">
+              {data.projects.slice(0, 3).map((p) => (
+                <li key={p.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-xs text-foreground truncate">
                   {p.title}
                 </li>
               ))}
             </ul>
           ) : (
             <EmptyState
-              title="Room for your next idea"
-              description="Your active projects will appear here once you create them in Phase 4."
-              icon={<Layers size={26} />}
+              title="No active projects"
+              description="Create a project board to organize strategic goals."
+              icon={<Layers size={20} />}
             />
           )}
         </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Recent notes</h2>
-            <NotebookPen />
+
+        {/* Recent Notes */}
+        <GlassCard hover className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-semibold text-foreground">
+            <span className="flex items-center gap-2">
+              <NotebookPen size={15} className="text-[#b8a9dd]" />
+              Recent Notes
+            </span>
+            <Link href="/notes" className="text-muted-foreground hover:text-foreground">
+              <ArrowUpRight size={13} />
+            </Link>
           </div>
           {data.notes.length ? (
-            <ul className="space-y-4">
-              {data.notes.map((n) => (
-                <li key={n.id} className="rounded-lg bg-white/5 p-3 text-sm">
+            <ul className="space-y-2">
+              {data.notes.slice(0, 3).map((n) => (
+                <li key={n.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-xs text-foreground truncate">
                   {n.title}
                 </li>
               ))}
             </ul>
           ) : (
             <EmptyState
-              title="Keep a little inspiration"
-              description="Your recent notes will live here. The rich text editor arrives in Phase 2."
-              icon={<NotebookPen size={26} />}
+              title="No notes yet"
+              description="Capture your thoughts with the rich markdown notes editor."
+              icon={<NotebookPen size={20} />}
             />
           )}
         </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Learning journey</h2>
-            <GraduationCap />
+
+        {/* Learning Roadmaps */}
+        <GlassCard hover className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-semibold text-foreground">
+            <span className="flex items-center gap-2">
+              <GraduationCap size={15} className="text-emerald-300" />
+              Learning Roadmaps
+            </span>
+            <Link href="/learning" className="text-muted-foreground hover:text-foreground">
+              <ArrowUpRight size={13} />
+            </Link>
           </div>
-          <p className="text-2xl font-medium">
-            {data.learningPaths}{' '}
-            <span className="text-sm text-muted-foreground">learning paths</span>
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            A small step toward the person you want to become. Learning tools arrive in Phase 4.
-          </p>
+          <div className="py-2">
+            <p className="text-2xl font-semibold text-foreground">
+              {data.learningPaths}{' '}
+              <span className="text-xs font-normal text-muted-foreground">roadmaps active</span>
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Track skill milestones, curricula progress, and study streaks.
+            </p>
+          </div>
         </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Calendar preview</h2>
-            <CalendarDays />
+
+        {/* Cloud Storage Usage */}
+        <GlassCard hover className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-semibold text-foreground">
+            <span className="flex items-center gap-2">
+              <HardDrive size={15} className="text-sky-300" />
+              Private Storage
+            </span>
+            <Link href="/files" className="text-muted-foreground hover:text-foreground">
+              <ArrowUpRight size={13} />
+            </Link>
           </div>
-          <p className="text-sm text-muted-foreground">Your timezone</p>
-          <p className="mt-1 text-lg">{data.timezone.replaceAll('_', ' ')}</p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Events and server-delivered reminders arrive in Phase 2.
-          </p>
-        </GlassCard>
-        <GlassCard>
-          <div className="card-heading">
-            <h2>Your cloud storage</h2>
-            <HardDrive />
+          <div className="py-2">
+            <p className="text-2xl font-semibold text-foreground">
+              {String(BigInt(data.storageBytes) / 1024n)}{' '}
+              <span className="text-xs font-normal text-muted-foreground">KB used</span>
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {data.fileCount} attachments safely backed up.
+            </p>
           </div>
-          <p className="text-2xl font-medium">
-            {String(BigInt(data.storageBytes) / 1024n)}{' '}
-            <span className="text-sm text-muted-foreground">KB recorded</span>
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {data.fileCount} files · Uploads and private Cloudinary delivery arrive in Phase 5.
-          </p>
         </GlassCard>
       </div>
     </motion.div>

@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button';
 import { FormModal } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { toast } from 'sonner';
+
 const modules = [
   ['Tasks', CheckSquare, '/tasks'],
   ['Notes', BookHeart, '/notes'],
@@ -45,6 +46,7 @@ const modules = [
   ['Projects', Layers, '/projects'],
   ['Files', Folder, '/files'],
 ] as const;
+
 export function Workspace({
   initialSession,
   children,
@@ -62,31 +64,19 @@ export function Workspace({
     [logout, setLogout] = useState(false),
     [busy, setBusy] = useState(false),
     [notifications, setNotifications] = useState(false);
-  const { data: session = initialSession } = useQuery({
-    queryKey: ['session'],
-    queryFn: () => api<Session>('/auth/me'),
-    initialData: initialSession,
-    refetchInterval: 60000,
-    retry: false,
-  });
-  useEffect(() => setCsrf(session.csrfToken), [session.csrfToken]);
+  const [session, setSession] = useState(initialSession);
+
   useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: light)');
-    const apply = () => {
-      document.documentElement.dataset.theme =
-        session.settings.theme === 'system'
-          ? media.matches
-            ? 'light'
-            : 'dark'
-          : session.settings.theme;
-    };
-    apply();
-    media.addEventListener('change', apply);
-    return () => media.removeEventListener('change', apply);
-  }, [session.settings.theme]);
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname, setSidebarOpen]);
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearch((prev) => !prev);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   async function signOut() {
     setBusy(true);
     try {
@@ -101,31 +91,40 @@ export function Workspace({
       setBusy(false);
     }
   }
+
   return (
     <SessionContext.Provider value={session}>
-      <a href="#main" className="skip-link">
+      <a href="#main" className="skip-link sr-only focus:not-sr-only">
         Skip to content
       </a>
       <div className="ambient" aria-hidden="true" />
       {sidebarOpen && (
         <button
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-20 bg-slate-950/70 backdrop-blur-sm lg:hidden"
           aria-label="Close navigation"
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Glassmorphic Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-        <Link className="mb-6 flex items-center gap-3 px-2 shrink-0" href="/dashboard" onClick={() => setSidebarOpen(false)}>
-          <span className="brand-icon">
-            <Layers size={22} />
+        <Link
+          className="mb-6 flex items-center gap-3 px-2 shrink-0 group"
+          href="/dashboard"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <span className="brand-icon group-hover:scale-105 transition-transform">
+            <Layers size={21} />
           </span>
-          <span className="text-lg font-semibold tracking-tight">
-            TaskMate<span className="ml-1 text-sky-200">AI</span>
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            TaskMate<span className="ml-1 text-[#8ea9e8]">AI</span>
           </span>
         </Link>
-        <div className="mb-2 px-3 text-[11px] uppercase tracking-[.2em] text-muted-foreground shrink-0">
+
+        <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[.22em] text-[#8ea9e8]/80 shrink-0">
           Your workspace
         </div>
+
         <nav aria-label="Main navigation" className="space-y-0.5">
           <Link
             href="/dashboard"
@@ -149,7 +148,8 @@ export function Workspace({
             </Link>
           ))}
         </nav>
-        <div className="mt-6 pt-4 border-t border-border shrink-0">
+
+        <div className="mt-auto pt-6 border-t border-white/10 shrink-0">
           <Link
             href="/settings"
             onClick={() => setSidebarOpen(false)}
@@ -158,13 +158,22 @@ export function Workspace({
             <Settings size={18} />
             <span>Settings</span>
           </Link>
-          <button className="nav-item w-full text-red-300 hover:text-red-200" onClick={() => { setSidebarOpen(false); setLogout(true); }}>
+          <button
+            className="nav-item w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
+            onClick={() => {
+              setSidebarOpen(false);
+              setLogout(true);
+            }}
+          >
             <LogOut size={18} />
             <span>Log out</span>
           </button>
         </div>
       </aside>
+
+      {/* Main Workspace Frame */}
       <div className="workspace">
+        {/* Glassmorphic Top Navbar */}
         <header className="topbar">
           <Button
             size="icon"
@@ -175,12 +184,17 @@ export function Workspace({
           >
             <Menu size={20} />
           </Button>
+
           <button className="search-trigger" onClick={() => setSearch(true)}>
-            <Search size={17} />
-            <span className="hidden sm:inline">Find a workspace page</span>
+            <Search size={16} className="text-[#8ea9e8]" />
+            <span className="hidden sm:inline">Search pages, tasks, notes…</span>
             <span className="sm:hidden">Search</span>
+            <kbd className="hidden sm:inline-block ml-4 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-muted-foreground">
+              ⌘K
+            </kbd>
           </button>
-          <div className="ml-auto hidden text-sm text-muted-foreground md:block">
+
+          <div className="ml-auto hidden text-xs font-medium text-muted-foreground md:block">
             {new Intl.DateTimeFormat('en-IN', {
               day: 'numeric',
               month: 'short',
@@ -188,37 +202,42 @@ export function Workspace({
               timeZone: session.settings.timezone,
             }).format(new Date())}
           </div>
+
           <Button
             size="icon"
             variant="ghost"
             aria-label="Notifications"
             onClick={() => setNotifications(true)}
+            className="rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
           >
-            <Bell size={19} />
+            <Bell size={18} className="text-muted-foreground hover:text-foreground" />
           </Button>
+
           <Link href="/settings" className="profile-link" aria-label="Open profile settings">
             <span className="avatar">{session.owner.name.slice(0, 1).toUpperCase()}</span>
-            <span className="hidden text-sm sm:block">{session.owner.name}</span>
-            <ChevronDown size={14} />
+            <span className="hidden text-xs font-semibold text-foreground sm:block">{session.owner.name}</span>
+            <ChevronDown size={13} className="text-muted-foreground" />
           </Link>
         </header>
-        <main id="main" className="main-content pb-24 lg:pb-10">
+
+        {/* Workspace Children Content */}
+        <main id="main" className="main-content pb-24 lg:pb-12">
           {children}
-          <footer className="mt-10 hidden sm:flex justify-between border-t border-border pt-6 text-xs text-muted-foreground">
+          <footer className="mt-14 hidden sm:flex justify-between border-t border-white/10 pt-6 text-xs text-muted-foreground">
             <span>A little clarity. A little progress.</span>
-            <span>TaskMate AI · Single Owner System</span>
+            <span>TaskMate AI · Single-Owner Glassmorphism Suite</span>
           </footer>
         </main>
 
-        {/* Mobile PWA Bottom Navigation Bar */}
+        {/* Mobile PWA Bottom Glass Navigation Bar */}
         <nav
           aria-label="Mobile navigation"
-          className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-border bg-slate-950/90 px-2 backdrop-blur-xl lg:hidden shadow-2xl"
+          className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-white/15 bg-[#101827]/85 px-3 backdrop-blur-2xl lg:hidden shadow-[0_-8px_32px_rgba(0,0,0,0.4)]"
         >
           <Link
             href="/dashboard"
             className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/dashboard' ? 'text-sky-300' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/dashboard' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <LayoutDashboard size={18} />
@@ -227,7 +246,7 @@ export function Workspace({
           <Link
             href="/tasks"
             className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/tasks' ? 'text-sky-300' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/tasks' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <CheckSquare size={18} />
@@ -236,7 +255,7 @@ export function Workspace({
           <Link
             href="/calendar"
             className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/calendar' ? 'text-sky-300' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/calendar' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <CalendarDays size={18} />
@@ -245,7 +264,7 @@ export function Workspace({
           <Link
             href="/assistant"
             className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/assistant' ? 'text-sky-300' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/assistant' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Sparkles size={18} />
@@ -260,37 +279,13 @@ export function Workspace({
           </button>
         </nav>
       </div>
-      <FormModal
-        open={!!planned}
-        onOpenChange={() => setPlanned('')}
-        title={planned}
-        description="Your workspace is being built one complete feature at a time."
-      >
-        <ol className="space-y-3 text-sm text-muted-foreground">
-          {[
-            'Foundation, secure login & dashboard — current',
-            'Tasks, notes, calendar & reliable reminders',
-            'Gemini assistant, focus sessions, habits & goals',
-            'Expenses, bookmarks, learning, journal & projects',
-            'Private files & attachments',
-            'End-to-end testing, hardening & deployment',
-          ].map((item, i) => (
-            <li key={item} className="flex gap-3">
-              <span className="text-sky-200">{i + 1}.</span>
-              {item}
-            </li>
-          ))}
-        </ol>
-        <p className="mt-6 rounded-lg bg-white/5 p-3 text-xs text-muted-foreground">
-          Only foundation features are available in this version. No sample records are added to
-          your workspace.
-        </p>
-      </FormModal>
+
+      {/* Global Quick Search Modal */}
       <FormModal
         open={search}
         onOpenChange={setSearch}
-        title="Find a page"
-        description="Search the available workspace pages. Record search arrives with the core modules."
+        title="Find a page or view"
+        description="Quick jump to any module or setting in your workspace."
       >
         <label className="sr-only" htmlFor="page-search">
           Search pages
@@ -301,12 +296,23 @@ export function Workspace({
           className="field"
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Dashboard, settings…"
+          placeholder="Dashboard, tasks, notes, calendar, settings…"
         />
         <div className="mt-4 grid gap-2">
           {[
             ['Dashboard', '/dashboard'],
-            ['Settings', '/settings'],
+            ['Tasks & Checklist', '/tasks'],
+            ['Notes & Markdown', '/notes'],
+            ['Calendar & Reminders', '/calendar'],
+            ['Gemini AI Assistant', '/assistant'],
+            ['Productivity & Habits', '/productivity'],
+            ['Expense Tracker', '/expenses'],
+            ['Bookmarks Library', '/bookmarks'],
+            ['Learning Roadmaps', '/learning'],
+            ['Private Journal', '/journal'],
+            ['Project Boards', '/projects'],
+            ['Cloud File Assets', '/files'],
+            ['Settings & Preferences', '/settings'],
           ]
             .filter(([label]) => label.toLowerCase().includes(term.toLowerCase()))
             .map(([label, href]) => (
@@ -314,35 +320,38 @@ export function Workspace({
                 key={href}
                 href={href}
                 onClick={() => setSearch(false)}
-                className="rounded-lg p-3 hover:bg-white/10"
+                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-3 text-sm text-foreground transition hover:border-white/15 hover:bg-white/[0.08]"
               >
-                {label}
+                <span>{label}</span>
+                <span className="text-xs text-muted-foreground">Jump</span>
               </Link>
             ))}
-          {!['dashboard', 'settings'].some((x) => x.includes(term.toLowerCase())) && (
-            <p className="py-4 text-sm text-muted-foreground">No matching pages.</p>
-          )}
         </div>
       </FormModal>
+
+      {/* Notifications Inbox Modal */}
       <FormModal
         open={notifications}
         onOpenChange={setNotifications}
         title="Notifications"
-        description="Your private notification inbox."
+        description="Your private system notification inbox."
       >
         <NotificationList />
       </FormModal>
+
+      {/* Confirm Logout Modal */}
       <ConfirmDialog
         open={logout}
         onOpenChange={setLogout}
         title="Log out of your workspace?"
-        description="This session will be revoked immediately. Your saved data stays safe."
+        description="This session will be revoked immediately. Your saved data stays secure."
         onConfirm={signOut}
         pending={busy}
       />
     </SessionContext.Provider>
   );
 }
+
 function NotificationList() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications'],
@@ -350,25 +359,25 @@ function NotificationList() {
       api<{ id: string; title: string; body: string; readAt: string | null }[]>('/notifications'),
   });
   const client = useQueryClient();
+
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <p>Loading notifications…</p>
+        <p className="text-sm text-muted-foreground">Loading notifications…</p>
       ) : error ? (
-        <p role="alert">{error.message}</p>
+        <p role="alert" className="text-sm text-red-300">{error.message}</p>
       ) : !data?.length ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           You&apos;re all caught up. No notifications yet.
         </p>
       ) : (
         data.map((n) => (
-          <div className="rounded-xl border border-border p-4" key={n.id}>
-            <h3 className="font-medium">{n.title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2" key={n.id}>
+            <h3 className="font-medium text-foreground text-sm">{n.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="mt-2"
               onClick={async () => {
                 try {
                   await api(`/notifications/${n.id}`, {

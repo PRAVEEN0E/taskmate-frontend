@@ -328,12 +328,12 @@ export function NotesView() {
       />
 
       {/* 2. Folders Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto border-b border-border pb-3 text-xs">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-white/10 pb-3 text-xs">
         <button
           onClick={() => setSelectedFolder(null)}
           className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium transition ${
             selectedFolder === null
-              ? 'bg-sky-500/20 text-sky-200 border border-sky-400/30'
+              ? 'bg-[#8ea9e8]/20 text-[#8ea9e8] border border-[#8ea9e8]/30 shadow-sm'
               : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
           }`}
         >
@@ -347,7 +347,7 @@ export function NotesView() {
               onClick={() => setSelectedFolder(f.id)}
               className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium transition ${
                 selectedFolder === f.id
-                  ? 'bg-sky-500/20 text-sky-200 border border-sky-400/30'
+                  ? 'bg-[#8ea9e8]/20 text-[#8ea9e8] border border-[#8ea9e8]/30 shadow-sm'
                   : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
               }`}
             >
