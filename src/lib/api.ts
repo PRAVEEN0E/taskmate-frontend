@@ -7,8 +7,19 @@ export class ApiError extends Error {
   }
 }
 let csrf = '';
+if (typeof window !== 'undefined') {
+  csrf = sessionStorage.getItem('taskmate_csrf') || '';
+}
+
 export function setCsrf(token: string) {
   csrf = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      sessionStorage.setItem('taskmate_csrf', token);
+    } else {
+      sessionStorage.removeItem('taskmate_csrf');
+    }
+  }
 }
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;

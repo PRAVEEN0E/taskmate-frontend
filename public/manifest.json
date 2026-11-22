@@ -1,16 +1,16 @@
 {
-  "name": "TaskMate AI",
-  "short_name": "TaskMate",
+  "name": "Buddio",
+  "short_name": "Buddio",
   "description": "Your private AI-powered personal productivity workspace.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#111a2b",
-  "theme_color": "#111a2b",
+  "background_color": "#E9E8FF",
+  "theme_color": "#7864F6",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/buddio-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

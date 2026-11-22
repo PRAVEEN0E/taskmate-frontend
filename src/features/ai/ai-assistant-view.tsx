@@ -231,7 +231,7 @@ export function AIAssistantView() {
                 <EmptyState
                   icon={<Bot size={32} className="text-sky-300" />}
                   title="How can I assist you today?"
-                  description="Ask TaskMate AI about your agenda, plan out your schedule, or ask for deep summaries."
+                  description="Ask Buddio about your agenda, plan out your schedule, or ask for deep summaries."
                 />
               ) : (
                 messages.map((m) => (

@@ -3,23 +3,23 @@ import { Providers } from '@/components/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'TaskMate AI — Your personal workspace', template: '%s · TaskMate AI' },
+  title: { default: 'Buddio — Your personal workspace', template: '%s · Buddio' },
   description: 'A private workspace for a more intentional day.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'TaskMate AI',
+    title: 'Buddio',
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/buddio-icon.png',
+    apple: '/buddio-icon.png',
   },
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#111a2b',
+  themeColor: '#7864F6',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -66,6 +67,13 @@ export function Workspace({
     [notifications, setNotifications] = useState(false);
   const [session, setSession] = useState(initialSession);
 
+  // Initialize and synchronize CSRF token across page refreshes and navigations
+  useEffect(() => {
+    if (initialSession?.csrfToken) {
+      setCsrf(initialSession.csrfToken);
+    }
+  }, [initialSession]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -100,32 +108,38 @@ export function Workspace({
       <div className="ambient" aria-hidden="true" />
       {sidebarOpen && (
         <button
-          className="fixed inset-0 z-20 bg-slate-950/70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-20 bg-[#19183B]/30 backdrop-blur-sm lg:hidden"
           aria-label="Close navigation"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Glassmorphic Sidebar */}
+      {/* 3D Soft Clay Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'is-open' : ''}`}>
         <Link
           className="mb-6 flex items-center gap-3 px-2 shrink-0 group"
           href="/dashboard"
           onClick={() => setSidebarOpen(false)}
         >
-          <span className="brand-icon group-hover:scale-105 transition-transform">
-            <Layers size={21} />
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            TaskMate<span className="ml-1 text-[#8ea9e8]">AI</span>
+          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl shadow-[4px_4px_10px_#c8c4e8,-3px_-3px_8px_#ffffff] border border-white/80 group-hover:scale-105 transition-transform">
+            <Image
+              src="/buddio-icon.png"
+              alt="Buddio"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+          <span className="text-xl font-extrabold tracking-tight text-[#19183B]">
+            Buddio
           </span>
         </Link>
 
-        <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[.22em] text-[#8ea9e8]/80 shrink-0">
+        <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[.22em] text-[#7864F6] shrink-0">
           Your workspace
         </div>
 
-        <nav aria-label="Main navigation" className="space-y-0.5">
+        <nav aria-label="Main navigation" className="space-y-1">
           <Link
             href="/dashboard"
             onClick={() => setSidebarOpen(false)}
@@ -149,7 +163,7 @@ export function Workspace({
           ))}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-white/10 shrink-0">
+        <div className="mt-auto pt-6 border-t border-[#7864F6]/15 shrink-0">
           <Link
             href="/settings"
             onClick={() => setSidebarOpen(false)}
@@ -159,7 +173,7 @@ export function Workspace({
             <span>Settings</span>
           </Link>
           <button
-            className="nav-item w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
+            className="nav-item w-full text-[#F47C91] hover:text-[#e05b74] hover:bg-[#F47C91]/10"
             onClick={() => {
               setSidebarOpen(false);
               setLogout(true);
@@ -173,7 +187,7 @@ export function Workspace({
 
       {/* Main Workspace Frame */}
       <div className="workspace">
-        {/* Glassmorphic Top Navbar */}
+        {/* Soft 3D Clay Topbar */}
         <header className="topbar">
           <Button
             size="icon"
@@ -186,15 +200,15 @@ export function Workspace({
           </Button>
 
           <button className="search-trigger" onClick={() => setSearch(true)}>
-            <Search size={16} className="text-[#8ea9e8]" />
+            <Search size={16} className="text-[#7864F6]" />
             <span className="hidden sm:inline">Search pages, tasks, notes…</span>
             <span className="sm:hidden">Search</span>
-            <kbd className="hidden sm:inline-block ml-4 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-muted-foreground">
+            <kbd className="hidden sm:inline-block ml-4 rounded-lg border border-white bg-[#E9E8FF] px-2 py-0.5 text-[10px] text-[#666584] shadow-sm font-semibold">
               ⌘K
             </kbd>
           </button>
 
-          <div className="ml-auto hidden text-xs font-medium text-muted-foreground md:block">
+          <div className="ml-auto hidden text-xs font-semibold text-[#666584] md:block">
             {new Intl.DateTimeFormat('en-IN', {
               day: 'numeric',
               month: 'short',
@@ -205,39 +219,39 @@ export function Workspace({
 
           <Button
             size="icon"
-            variant="ghost"
+            variant="glass"
             aria-label="Notifications"
             onClick={() => setNotifications(true)}
-            className="rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+            className="rounded-2xl"
           >
-            <Bell size={18} className="text-muted-foreground hover:text-foreground" />
+            <Bell size={18} className="text-[#666584]" />
           </Button>
 
           <Link href="/settings" className="profile-link" aria-label="Open profile settings">
             <span className="avatar">{session.owner.name.slice(0, 1).toUpperCase()}</span>
-            <span className="hidden text-xs font-semibold text-foreground sm:block">{session.owner.name}</span>
-            <ChevronDown size={13} className="text-muted-foreground" />
+            <span className="hidden text-xs font-bold text-[#19183B] sm:block">{session.owner.name}</span>
+            <ChevronDown size={14} className="text-[#666584]" />
           </Link>
         </header>
 
         {/* Workspace Children Content */}
         <main id="main" className="main-content pb-24 lg:pb-12">
           {children}
-          <footer className="mt-14 hidden sm:flex justify-between border-t border-white/10 pt-6 text-xs text-muted-foreground">
+          <footer className="mt-14 hidden sm:flex justify-between border-t border-[#7864F6]/15 pt-6 text-xs font-medium text-[#666584]">
             <span>A little clarity. A little progress.</span>
-            <span>TaskMate AI · Single-Owner Glassmorphism Suite</span>
+            <span>Buddio · Soft 3D Claymorphism Suite</span>
           </footer>
         </main>
 
-        {/* Mobile PWA Bottom Glass Navigation Bar */}
+        {/* Mobile PWA Bottom Clay Navigation Bar */}
         <nav
           aria-label="Mobile navigation"
-          className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-white/15 bg-[#101827]/85 px-3 backdrop-blur-2xl lg:hidden shadow-[0_-8px_32px_rgba(0,0,0,0.4)]"
+          className="fixed bottom-3 inset-x-3 z-40 flex h-16 items-center justify-around rounded-[24px] border-2 border-white bg-[#F3F1FF] px-3 shadow-[6px_6px_20px_#c7c4e6,-6px_-6px_20px_#ffffff] lg:hidden"
         >
           <Link
             href="/dashboard"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/dashboard' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+              pathname === '/dashboard' ? 'text-[#7864F6]' : 'text-[#666584]'
             }`}
           >
             <LayoutDashboard size={18} />
@@ -245,8 +259,8 @@ export function Workspace({
           </Link>
           <Link
             href="/tasks"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/tasks' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+              pathname === '/tasks' ? 'text-[#7864F6]' : 'text-[#666584]'
             }`}
           >
             <CheckSquare size={18} />
@@ -254,8 +268,8 @@ export function Workspace({
           </Link>
           <Link
             href="/calendar"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/calendar' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+              pathname === '/calendar' ? 'text-[#7864F6]' : 'text-[#666584]'
             }`}
           >
             <CalendarDays size={18} />
@@ -263,8 +277,8 @@ export function Workspace({
           </Link>
           <Link
             href="/assistant"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/assistant' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold transition ${
+              pathname === '/assistant' ? 'text-[#7864F6]' : 'text-[#666584]'
             }`}
           >
             <Sparkles size={18} />
@@ -272,7 +286,7 @@ export function Workspace({
           </Link>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex flex-col items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition"
+            className="flex flex-col items-center gap-1 text-[10px] font-bold text-[#666584]"
           >
             <Menu size={18} />
             <span>More</span>
@@ -320,10 +334,10 @@ export function Workspace({
                 key={href}
                 href={href}
                 onClick={() => setSearch(false)}
-                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-3 text-sm text-foreground transition hover:border-white/15 hover:bg-white/[0.08]"
+                className="flex items-center justify-between rounded-2xl border border-white bg-[#E9E8FF] p-3.5 text-sm font-semibold text-[#19183B] shadow-[2px_2px_6px_#cecced,-2px_-2px_6px_#ffffff] transition hover:-translate-y-0.5"
               >
                 <span>{label}</span>
-                <span className="text-xs text-muted-foreground">Jump</span>
+                <span className="text-xs text-[#7864F6]">Jump →</span>
               </Link>
             ))}
         </div>
@@ -363,18 +377,18 @@ function NotificationList() {
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading notifications…</p>
+        <p className="text-sm text-[#666584]">Loading notifications…</p>
       ) : error ? (
-        <p role="alert" className="text-sm text-red-300">{error.message}</p>
+        <p role="alert" className="text-sm text-[#F47C91]">{error.message}</p>
       ) : !data?.length ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="py-8 text-center text-sm font-medium text-[#666584]">
           You&apos;re all caught up. No notifications yet.
         </p>
       ) : (
         data.map((n) => (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2" key={n.id}>
-            <h3 className="font-medium text-foreground text-sm">{n.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
+          <div className="rounded-2xl border border-white bg-[#E9E8FF] p-4 space-y-2 shadow-[2px_2px_6px_#cecced,-2px_-2px_6px_#ffffff]" key={n.id}>
+            <h3 className="font-bold text-[#19183B] text-sm">{n.title}</h3>
+            <p className="text-xs text-[#666584] leading-relaxed font-medium">{n.body}</p>
             <Button
               variant="outline"
               size="sm"

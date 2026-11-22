@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Layers, ShieldCheck, Eye, EyeOff, LockKeyhole, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -30,52 +31,65 @@ export function LoginForm() {
       <div className="ambient" aria-hidden="true" />
       <div className="mx-auto grid w-full max-w-6xl items-center gap-16 lg:grid-cols-2">
         <section className="hidden lg:block space-y-6">
-          <div className="flex items-center gap-3 text-2xl font-semibold text-foreground">
-            <span className="brand-icon">
-              <Layers size={22} />
-            </span>
-            <span>
-              TaskMate <span className="text-[#8ea9e8]">AI</span>
-            </span>
+          <div className="flex items-center gap-3 text-3xl font-extrabold text-[#19183B]">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl shadow-[5px_5px_12px_#c8c4e8,-3px_-3px_8px_#ffffff] border border-white">
+              <Image
+                src="/buddio-icon.png"
+                alt="Buddio"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+            <span>Buddio</span>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1 text-xs font-semibold uppercase tracking-[.25em] text-[#8ea9e8]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/60 px-4 py-1.5 text-xs font-bold uppercase tracking-[.25em] text-[#7864F6] shadow-[2px_2px_8px_#d2d0ec]">
             <Sparkles size={13} />
             <span>Private Workspace</span>
           </div>
-          <h1 className="text-5xl font-semibold leading-[1.12] tracking-tight text-foreground sm:text-6xl">
+          <h1 className="text-5xl font-extrabold leading-[1.12] tracking-tight text-[#19183B] sm:text-6xl">
             Less scattered.
             <br />
-            More <span className="italic text-[#b8a9dd]">intentional.</span>
+            More <span className="italic text-[#7864F6]">intentional.</span>
           </h1>
-          <p className="max-w-md text-base leading-relaxed text-muted-foreground">
+          <p className="max-w-md text-base leading-relaxed text-[#666584]">
             Your tasks, notes, habits, finances, and calendar.
             <br />
-            Together in an elegant, translucent space that&apos;s only yours.
+            Together in a friendly, tactile 3D space that&apos;s only yours.
           </p>
-          <div className="pt-6 flex items-center gap-3 text-sm text-muted-foreground">
-            <ShieldCheck size={20} className="text-[#8ea9e8]" />
+          <div className="pt-6 flex items-center gap-3 text-sm text-[#666584]">
+            <ShieldCheck size={20} className="text-[#7864F6]" />
             <span>Single-owner security. 100% private by design.</span>
           </div>
         </section>
 
-        {/* Translucent Frosted Glass Login Card */}
+        {/* 3D Clay Login Card */}
         <motion.section
           initial={reduce ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="glass w-full max-w-md justify-self-center rounded-3xl border border-white/20 bg-[#121c2d]/80 p-8 shadow-[0_24px_64px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:p-10"
+          className="w-full max-w-md justify-self-center rounded-[32px] border-2 border-white bg-[#F5F3FF] p-8 shadow-[12px_12px_28px_#c5c2e5,-10px_-10px_24px_#ffffff] sm:p-10"
         >
-          <div className="mb-6 inline-flex rounded-2xl border border-white/15 bg-white/[0.06] p-3 text-[#8ea9e8] shadow-sm">
-            <LockKeyhole size={24} />
+          <div className="mb-5 flex items-center gap-3">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border border-white shadow-[4px_4px_10px_#cfcceb,-3px_-3px_8px_#ffffff]">
+              <Image
+                src="/buddio-icon.png"
+                alt="Buddio"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#7864F6]">
+                Welcome to Buddio
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight text-[#19183B]">
+                Sign in
+              </h2>
+            </div>
           </div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[.2em] text-[#8ea9e8]">
-            TaskMate AI Login
-          </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Welcome back
-          </h2>
-          <p className="mb-7 mt-2 text-xs leading-relaxed text-muted-foreground">
-            Sign in to unlock your personal productivity suite.
+          <p className="mb-7 text-xs font-medium leading-relaxed text-[#666584]">
+            Unlock your personal productivity suite.
           </p>
 
           <form

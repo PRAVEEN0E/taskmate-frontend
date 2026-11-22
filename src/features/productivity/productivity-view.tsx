@@ -402,7 +402,7 @@ export function ProductivityView() {
             <input
               type="text"
               required
-              placeholder="e.g. Launch TaskMate AI Production Deployment"
+              placeholder="e.g. Launch Buddio Production Deployment"
               value={goalTitle}
               onChange={(e) => setGoalTitle(e.target.value)}
               className="mt-1 w-full rounded-xl border border-border bg-black/30 px-3.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
