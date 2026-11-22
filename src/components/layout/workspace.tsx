@@ -43,7 +43,6 @@ const modules = [
   ['Expenses', Wallet, '/expenses'],
   ['Bookmarks', Bookmark, '/bookmarks'],
   ['Learning', GraduationCap, '/learning'],
-  ['Journal', BookHeart, '/journal'],
   ['Projects', Layers, '/projects'],
   ['Files', Folder, '/files'],
 ] as const;
@@ -322,7 +321,6 @@ export function Workspace({
             ['Expense Tracker', '/expenses'],
             ['Bookmarks Library', '/bookmarks'],
             ['Learning Roadmaps', '/learning'],
-            ['Private Journal', '/journal'],
             ['Project Boards', '/projects'],
             ['Cloud File Assets', '/files'],
             ['Settings & Preferences', '/settings'],
