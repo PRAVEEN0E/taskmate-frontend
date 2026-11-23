@@ -63,6 +63,10 @@ export function ProductivityView() {
   const [goalTitle, setGoalTitle] = useState('');
   const [goalMilestones, setGoalMilestones] = useState('');
 
+  // Add Milestone Modal per Goal
+  const [activeGoalForMilestone, setActiveGoalForMilestone] = useState<string | null>(null);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
+
   // 1. Fetch Habits
   const { data: habits = [] } = useQuery<any[]>({
     queryKey: ['habits'],
@@ -208,6 +212,21 @@ export function ProductivityView() {
         method: 'POST',
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+
+  const addMilestoneMutation = useMutation({
+    mutationFn: ({ goalId, title }: { goalId: string; title: string }) =>
+      api(`/goals/${goalId}/milestones`, {
+        method: 'POST',
+        body: JSON.stringify({ title }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      setActiveGoalForMilestone(null);
+      setNewMilestoneTitle('');
+      toast.success('Milestone added to goal');
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to add milestone'),
   });
 
   // 14-day streak days with weekday labels
@@ -584,6 +603,18 @@ export function ProductivityView() {
                         </span>
                       </div>
                     ))}
+
+                    {/* Add Milestone Button / Input inside Goal Card */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveGoalForMilestone(goal.id);
+                        setNewMilestoneTitle('');
+                      }}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/20 p-2 text-xs font-semibold text-[#8ea9e8] transition hover:border-[#8ea9e8]/50 hover:bg-[#8ea9e8]/10"
+                    >
+                      <Plus size={13} /> Add Milestone
+                    </button>
                   </div>
                 </GlassCard>
               );
@@ -657,6 +688,60 @@ export function ProductivityView() {
               Cancel
             </Button>
             <Button type="submit">Define Goal</Button>
+          </div>
+        </form>
+      </FormModal>
+      {/* Add Milestone to Goal Modal */}
+      <FormModal
+        open={!!activeGoalForMilestone}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveGoalForMilestone(null);
+            setNewMilestoneTitle('');
+          }
+        }}
+        title="Add Milestone"
+        description="Add a new milestone step to this strategic goal."
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (activeGoalForMilestone && newMilestoneTitle.trim()) {
+              addMilestoneMutation.mutate({
+                goalId: activeGoalForMilestone,
+                title: newMilestoneTitle.trim(),
+              });
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Milestone Title</label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="e.g. Implement distributed cache layer"
+              value={newMilestoneTitle}
+              onChange={(e) => setNewMilestoneTitle(e.target.value)}
+              className="w-full rounded-xl border border-white/15 bg-black/30 px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#8ea9e8]"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setActiveGoalForMilestone(null);
+                setNewMilestoneTitle('');
+              }}
+              disabled={addMilestoneMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={addMilestoneMutation.isPending || !newMilestoneTitle.trim()}>
+              {addMilestoneMutation.isPending ? 'Adding...' : 'Add Milestone'}
+            </Button>
           </div>
         </form>
       </FormModal>
