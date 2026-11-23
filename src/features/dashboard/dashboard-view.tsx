@@ -9,7 +9,7 @@ import {
   CalendarDays,
   Layers,
   NotebookPen,
-  GraduationCap,
+  Award,
   Wallet,
   HardDrive,
   Sparkles,
@@ -324,24 +324,24 @@ export function DashboardView() {
           )}
         </GlassCard>
 
-        {/* Learning Roadmaps */}
+        {/* Productivity System */}
         <GlassCard hover className="space-y-3">
           <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-semibold text-foreground">
             <span className="flex items-center gap-2">
-              <GraduationCap size={15} className="text-emerald-300" />
-              Learning Roadmaps
+              <Timer size={15} className="text-emerald-300" />
+              Productivity Flow
             </span>
-            <Link href="/learning" className="text-muted-foreground hover:text-foreground">
+            <Link href="/productivity" className="text-muted-foreground hover:text-foreground">
               <ArrowUpRight size={13} />
             </Link>
           </div>
           <div className="py-2">
             <p className="text-2xl font-semibold text-foreground">
-              {data.learningPaths}{' '}
-              <span className="text-xs font-normal text-muted-foreground">roadmaps active</span>
+              {Math.round((data.focusSeconds || 0) / 60)}{' '}
+              <span className="text-xs font-normal text-muted-foreground">mins focused</span>
             </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Track skill milestones, curricula progress, and study streaks.
+              Pomodoro interval timer, habit streaks, and goal roadmap milestones.
             </p>
           </div>
         </GlassCard>

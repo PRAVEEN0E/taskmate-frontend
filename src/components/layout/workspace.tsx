@@ -42,7 +42,6 @@ const modules = [
   ['Productivity', Timer, '/productivity'],
   ['Expenses', Wallet, '/expenses'],
   ['Bookmarks', Bookmark, '/bookmarks'],
-  ['Learning', GraduationCap, '/learning'],
   ['Projects', Layers, '/projects'],
   ['Files', Folder, '/files'],
 ] as const;
@@ -320,7 +319,6 @@ export function Workspace({
             ['Productivity & Habits', '/productivity'],
             ['Expense Tracker', '/expenses'],
             ['Bookmarks Library', '/bookmarks'],
-            ['Learning Roadmaps', '/learning'],
             ['Project Boards', '/projects'],
             ['Cloud File Assets', '/files'],
             ['Settings & Preferences', '/settings'],
