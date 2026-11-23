@@ -232,7 +232,7 @@ export function Workspace({
         </header>
 
         {/* Workspace Children Content */}
-        <main id="main" className="main-content pb-24 lg:pb-12">
+        <main id="main" className="main-content pb-28 lg:pb-12">
           {children}
           <footer className="mt-14 hidden sm:flex justify-between border-t border-white/10 pt-6 text-xs text-muted-foreground">
             <span>A little clarity. A little progress.</span>

@@ -298,7 +298,7 @@ export function AIAssistantView() {
 
         {/* Message Stream (9 cols) */}
         <div className="lg:col-span-9">
-          <GlassCard className="flex flex-col h-[70dvh] min-h-[480px] max-h-[680px] p-3 sm:p-5">
+          <GlassCard className="flex flex-col h-[75dvh] min-h-[460px] max-h-[720px] p-3 sm:p-5">
             {/* Header info */}
             <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3 px-1 text-xs">
               <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export function AIAssistantView() {
             </div>
 
             {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 sm:pr-2">
+            <div className="flex-1 overflow-y-auto overscroll-contain space-y-3.5 pr-1 sm:pr-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
               {messages.length === 0 ? (
                 <EmptyState
                   icon={<Bot size={32} className="text-[#8ea9e8]" />}

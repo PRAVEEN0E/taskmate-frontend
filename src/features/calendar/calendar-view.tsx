@@ -256,7 +256,7 @@ export function CalendarView() {
               <div className="grid grid-cols-7 gap-1 pt-2">
                 {monthMatrix.map((day, idx) => {
                   if (day === null) {
-                    return <div key={`empty-${idx}`} className="h-24 rounded-lg bg-white/[0.01]" />;
+                    return <div key={`empty-${idx}`} className="h-16 sm:h-24 rounded-lg bg-white/[0.01]" />;
                   }
 
                   const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -292,7 +292,7 @@ export function CalendarView() {
                         setEndAt(endDateStr);
                         setEventModal(true);
                       }}
-                      className={`h-24 overflow-hidden rounded-xl border p-1.5 transition cursor-pointer flex flex-col justify-between ${
+                      className={`h-16 sm:h-24 overflow-hidden rounded-xl border p-1 sm:p-1.5 transition cursor-pointer flex flex-col justify-between ${
                         isToday
                           ? 'border-sky-500/60 bg-sky-500/10'
                           : 'border-border/50 bg-white/[0.015] hover:bg-white/[0.05]'
