@@ -1,19 +1,22 @@
-const CACHE_NAME = 'buddio-pwa-v2';
+const CACHE_NAME = 'buddio-pwa-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => caches.delete(k))),
+    ).then(() => clients.claim())
+  );
 });
 
+// Do not intercept or hijack application page navigations or API calls
+// Let the browser handle network requests naturally so 401s and auth redirects aren't mangled.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method === 'GET' && event.request.url.startsWith(self.location.origin)) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request)),
-    );
-  }
+  // Pass-through to avoid TypeError: Failed to convert value to 'Response'
+  return;
 });
 
 // Push notification handling
