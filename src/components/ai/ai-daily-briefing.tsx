@@ -204,42 +204,6 @@ export function AiDailyBriefing() {
             </p>
           </div>
         </div>
-
-        {/* Natural Language & Voice Quick Capture */}
-        <form onSubmit={handleQuickSubmit} className="relative mt-1">
-          <div className="flex items-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-inner focus-within:border-sky-500/60 focus-within:ring-1 focus-within:ring-sky-500/40">
-            <input
-              type="text"
-              value={quickInput}
-              onChange={(e) => setQuickInput(e.target.value)}
-              placeholder="Ask Buddio or say 'Create task to review budget by 5 PM'..."
-              className="flex-1 bg-transparent px-4 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-            />
-
-            <div className="flex items-center gap-1 pr-2">
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`rounded-xl p-1.5 transition ${
-                  isListening
-                    ? 'bg-rose-500 text-white animate-pulse'
-                    : 'text-muted-foreground hover:bg-white/10 hover:text-foreground'
-                }`}
-                title={isListening ? 'Stop listening' : 'Voice input (Speech to text)'}
-              >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-              </button>
-
-              <button
-                type="submit"
-                disabled={aiProposalMutation.isPending || !quickInput.trim()}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500 text-white shadow-md transition hover:bg-sky-400 disabled:opacity-40"
-              >
-                {aiProposalMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              </button>
-            </div>
-          </div>
-        </form>
       </div>
     </div>
   );
