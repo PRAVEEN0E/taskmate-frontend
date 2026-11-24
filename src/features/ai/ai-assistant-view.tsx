@@ -111,6 +111,7 @@ export function AIAssistantView() {
     mutationFn: (id: string) =>
       api(`/ai/proposals/${id}/confirm`, {
         method: 'POST',
+        body: JSON.stringify({}),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

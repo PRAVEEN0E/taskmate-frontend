@@ -42,12 +42,19 @@ export function AiDailyBriefing() {
       }),
     onSuccess: async (res: any) => {
       if (res?.data?.id) {
-        // Automatically confirm and execute the task creation
-        await api(`/ai/proposals/${res.data.id}/confirm`, { method: 'POST' });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-        setQuickInput('');
-        toast.success('Task created successfully with AI!');
+        try {
+          // Automatically confirm and execute the task creation
+          await api(`/ai/proposals/${res.data.id}/confirm`, {
+            method: 'POST',
+            body: JSON.stringify({}),
+          });
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          setQuickInput('');
+          toast.success('Task created successfully with AI!');
+        } catch (confirmErr: any) {
+          toast.error(confirmErr?.message || 'Failed to confirm task.');
+        }
       }
     },
     onError: (err: any) => {
