@@ -16,6 +16,7 @@ import {
   Layers,
   Folder,
   Settings,
+  Users,
   LogOut,
   Search,
   ChevronDown,
@@ -40,6 +41,7 @@ const navItems: DockItemData[] = [
   { title: 'Expenses', icon: Wallet, href: '/expenses' },
   { title: 'Bookmarks', icon: Bookmark, href: '/bookmarks' },
   { title: 'Projects', icon: Layers, href: '/projects' },
+  { title: 'Groups', icon: Users, href: '/groups' },
   { title: 'Files', icon: Folder, href: '/files' },
   { title: 'Settings', icon: Settings, href: '/settings' },
 ];
