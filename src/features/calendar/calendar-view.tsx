@@ -46,6 +46,8 @@ export function CalendarView() {
   // Modals
   const [eventModal, setEventModal] = useState(false);
   const [reminderModal, setReminderModal] = useState(false);
+  const [selectedDayModal, setSelectedDayModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Form State Event
   const [title, setTitle] = useState('');
@@ -166,13 +168,49 @@ export function CalendarView() {
       .filter((t) => t.dueAt)
       .map((t) => ({
         id: `task-${t.id}`,
+        taskId: t.id,
         title: `Task: ${t.title}`,
         startAt: t.dueAt,
         color: '#10b981',
         isTask: true,
+        priority: t.priority,
         completed: t.status === 'COMPLETED',
       }));
   }, [tasks]);
+
+  // Day schedule items for currently selected date
+  const selectedDayEvents = useMemo(() => {
+    return events.filter((e) => {
+      const st = new Date(e.startAt);
+      return (
+        st.getFullYear() === selectedDate.getFullYear() &&
+        st.getMonth() === selectedDate.getMonth() &&
+        st.getDate() === selectedDate.getDate()
+      );
+    });
+  }, [events, selectedDate]);
+
+  const selectedDayTasks = useMemo(() => {
+    return taskEvents.filter((t) => {
+      const st = new Date(t.startAt);
+      return (
+        st.getFullYear() === selectedDate.getFullYear() &&
+        st.getMonth() === selectedDate.getMonth() &&
+        st.getDate() === selectedDate.getDate()
+      );
+    });
+  }, [taskEvents, selectedDate]);
+
+  const selectedDayReminders = useMemo(() => {
+    return reminders.filter((r) => {
+      const st = new Date(r.remindAt);
+      return (
+        st.getFullYear() === selectedDate.getFullYear() &&
+        st.getMonth() === selectedDate.getMonth() &&
+        st.getDate() === selectedDate.getDate()
+      );
+    });
+  }, [reminders, selectedDate]);
 
   return (
     <div className="space-y-6">
@@ -282,15 +320,15 @@ export function CalendarView() {
                     );
                   });
 
+                  const totalItems = dayEvents.length + dayTasks.length;
+
                   return (
                     <div
                       key={day}
                       onClick={() => {
-                        const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T09:00`;
-                        const endDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T10:00`;
-                        setStartAt(dateStr);
-                        setEndAt(endDateStr);
-                        setEventModal(true);
+                        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                        setSelectedDate(targetDate);
+                        setSelectedDayModal(true);
                       }}
                       className={`h-16 sm:h-24 overflow-hidden rounded-xl border p-1 sm:p-1.5 transition cursor-pointer flex flex-col justify-between ${
                         isToday
@@ -298,9 +336,16 @@ export function CalendarView() {
                           : 'border-border/50 bg-white/[0.015] hover:bg-white/[0.05]'
                       }`}
                     >
-                      <span className={`text-xs font-semibold ${isToday ? 'text-sky-300' : 'text-muted-foreground'}`}>
-                        {day}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-semibold ${isToday ? 'text-sky-300' : 'text-muted-foreground'}`}>
+                          {day}
+                        </span>
+                        {totalItems > 0 && (
+                          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-500/20 px-1 text-[9px] font-bold text-sky-300">
+                            {totalItems}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="space-y-1 overflow-hidden">
                         {dayEvents.slice(0, 2).map((e) => (
@@ -488,6 +533,171 @@ export function CalendarView() {
             <Button type="submit">Schedule Event</Button>
           </div>
         </form>
+      </FormModal>
+
+      {/* Day Schedule Details Modal */}
+      <FormModal
+        open={selectedDayModal}
+        onOpenChange={setSelectedDayModal}
+        title={selectedDate.toLocaleDateString('default', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })}
+        description="Daily schedule, meetings, deadlines, and time commitments."
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {selectedDayEvents.length + selectedDayTasks.length + selectedDayReminders.length} Scheduled Items
+            </span>
+            <Button
+              size="sm"
+              onClick={() => {
+                const year = selectedDate.getFullYear();
+                const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(selectedDate.getDate()).padStart(2, '0');
+                setStartAt(`${year}-${month}-${day}T09:00`);
+                setEndAt(`${year}-${month}-${day}T10:00`);
+                setSelectedDayModal(false);
+                setEventModal(true);
+              }}
+              className="gap-1.5 text-xs h-8"
+            >
+              <Plus size={14} /> Add Event
+            </Button>
+          </div>
+
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+            {selectedDayEvents.length === 0 && selectedDayTasks.length === 0 && selectedDayReminders.length === 0 ? (
+              <div className="py-8 text-center">
+                <CalendarDays className="mx-auto h-9 w-9 text-muted-foreground/40" />
+                <p className="mt-2 text-sm font-medium text-foreground">No tasks or events for this date</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Enjoy your free time or schedule a new event.</p>
+              </div>
+            ) : null}
+
+            {/* Events Section */}
+            {selectedDayEvents.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CalIcon size={12} /> Events & Meetings ({selectedDayEvents.length})
+                </h4>
+                {selectedDayEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="flex items-start justify-between rounded-xl border border-border bg-white/[0.03] p-3 text-xs"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="mt-0.5 h-3 w-1 rounded-full" style={{ backgroundColor: ev.color }} />
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{ev.title}</p>
+                        {ev.description && <p className="mt-0.5 text-xs text-muted-foreground">{ev.description}</p>}
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <Clock size={12} />
+                          <span>
+                            {new Date(ev.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
+                            {new Date(ev.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteEventMutation.mutate(ev.id)}
+                      className="text-muted-foreground hover:text-rose-400 transition p-1"
+                      title="Delete event"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tasks Section */}
+            {selectedDayTasks.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckSquare size={12} /> Due Tasks ({selectedDayTasks.length})
+                </h4>
+                {selectedDayTasks.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-xl border border-border bg-white/[0.03] p-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`flex h-4 w-4 items-center justify-center rounded border ${
+                          t.completed ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400' : 'border-border'
+                        }`}
+                      >
+                        {t.completed && <Check size={11} />}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-semibold text-sm ${
+                            t.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                          }`}
+                        >
+                          {t.title.replace(/^Task:\s*/, '')}
+                        </p>
+                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="capitalize">{t.priority?.toLowerCase() || 'medium'} priority</span>
+                          <span>•</span>
+                          <span>
+                            Due at{' '}
+                            {new Date(t.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Reminders Section */}
+            {selectedDayReminders.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Bell size={12} /> Timed Reminders ({selectedDayReminders.length})
+                </h4>
+                {selectedDayReminders.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between rounded-xl border border-border bg-white/[0.03] p-3 text-xs"
+                  >
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{r.title}</p>
+                      <span className="text-[11px] text-muted-foreground">
+                        Trigger: {new Date(r.remindAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {r.status === 'PENDING' ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => dismissMutation.mutate(r.id)}
+                        className="text-xs h-7 gap-1"
+                      >
+                        <Check size={12} /> Dismiss
+                      </Button>
+                    ) : (
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground">{r.status}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-3 border-t border-border">
+            <Button variant="ghost" onClick={() => setSelectedDayModal(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
       </FormModal>
 
       {/* Reminder Modal */}
