@@ -90,6 +90,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    google: '7mRLU3RClqs7gIZx9zoQL6DrMrjfo__SR5zfr_-5Om8',
+  },
 };
 
 export const viewport: Viewport = {
@@ -136,6 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="7mRLU3RClqs7gIZx9zoQL6DrMrjfo__SR5zfr_-5Om8" />
         <link rel="apple-touch-icon" href="/buddio-icon.png" />
         <script
           type="application/ld+json"
