@@ -82,7 +82,13 @@ export function MacDock({ items }: DockProps) {
   return (
     <nav
       aria-label="macOS Navigation Dock"
-      className="fixed bottom-3 sm:bottom-5 inset-x-0 z-50 flex justify-center pointer-events-none px-2 sm:px-4"
+      className="fixed inset-x-0 z-50 flex justify-center pointer-events-none px-2 sm:px-4"
+      style={{
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+        transform: 'translate3d(0, 0, 0)',
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        willChange: 'transform',
+      }}
     >
       {/* Sleek Minimal macOS Floating Dock (No clipping, overflow visible so enlarged icons pop up) */}
       <div
