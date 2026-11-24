@@ -142,6 +142,20 @@ export function AIAssistantView() {
 
   const handleSendPrompt = (text: string) => {
     if (!activeId) return;
+
+    // Detect if user is asking AI to create/schedule a task
+    const lower = text.toLowerCase();
+    const isTaskCreation =
+      lower.startsWith('create task') ||
+      lower.startsWith('add task') ||
+      lower.includes('create a task') ||
+      lower.includes('add a task') ||
+      lower.includes('schedule a task');
+
+    if (isTaskCreation) {
+      proposeMutation.mutate({ actionType: 'CREATE_TASK', prompt: text });
+    }
+
     sendMessageMutation.mutate(text);
   };
 
