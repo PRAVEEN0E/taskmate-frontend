@@ -28,6 +28,8 @@ import type { Dashboard } from '@/lib/types';
 import { useSession } from '@/hooks/use-session';
 import { GlassCard, StatCard, EmptyState, PageHeader, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { AiDailyBriefing } from '@/components/ai/ai-daily-briefing';
+import { PwaInstallPrompt } from '@/components/pwa/pwa-install-prompt';
 
 export function DashboardView() {
   const { owner, settings } = useSession(),
@@ -84,44 +86,11 @@ export function DashboardView() {
         }
       />
 
-      {/* Featured AI Daily Briefing Glass Card */}
-      <GlassCard className="relative overflow-hidden border-white/20 bg-gradient-to-br from-white/[0.09] via-white/[0.04] to-[#8ea9e8]/[0.08] p-7 shadow-[0_16px_48px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs font-medium text-[#8ea9e8]">
-              <Sparkles size={13} className="text-[#8ea9e8]" />
-              <span>AI Daily Briefing</span>
-            </div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Focus on 3 high-impact deliverables today.
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              You have <span className="font-medium text-foreground">{data.pending} pending tasks</span> and{' '}
-              <span className="font-medium text-foreground">{data.todayTasks.length} scheduled</span> for today.{' '}
-              {data.overdue > 0 ? (
-                <span className="text-amber-300 font-medium">{data.overdue} task is overdue. </span>
-              ) : (
-                'All deadlines are on track. '
-              )}
-              Maintain your daily cadence with a 25-minute Pomodoro focus block.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button asChild variant="glass" size="sm">
-              <Link href="/assistant">
-                <Brain size={14} className="text-[#b8a9dd]" />
-                <span>Ask Assistant</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/productivity">
-                <Timer size={14} className="text-[#8ea9e8]" />
-                <span>Start Focus</span>
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </GlassCard>
+      {/* Mobile PWA & Push Notification Prompt */}
+      <PwaInstallPrompt />
+
+      {/* AI Daily Briefing & Voice Capture */}
+      <AiDailyBriefing />
 
       {/* Quick Action Dock */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
