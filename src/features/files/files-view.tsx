@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { GlassCard, PageHeader, EmptyState, StatCard } from '@/components/shared';
@@ -47,6 +47,47 @@ export function FilesView() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileAsset | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+
+  // Convert base64 data:application/pdf to a clean object/blob URL to bypass browser iframe restrictions
+  useEffect(() => {
+    if (!previewFile) {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+        setPdfBlobUrl(null);
+      }
+      return;
+    }
+
+    const isPdf = previewFile.mimeType === 'application/pdf' || previewFile.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) return;
+
+    if (previewFile.url.startsWith('data:')) {
+      try {
+        const parts = previewFile.url.split(';base64,');
+        const contentType = parts[0].split(':')[1] || 'application/pdf';
+        const raw = atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+        for (let i = 0; i < rawLength; ++i) {
+          uInt8Array[i] = raw.charCodeAt(i);
+        }
+        const blob = new Blob([uInt8Array], { type: contentType });
+        const blobUrl = URL.createObjectURL(blob);
+        setPdfBlobUrl(blobUrl);
+      } catch (err) {
+        console.error('Failed to convert base64 to blob URL:', err);
+      }
+    } else {
+      setPdfBlobUrl(previewFile.url);
+    }
+
+    return () => {
+      if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [previewFile]);
 
   // 1. Fetch Files
   const { data: rawFiles = [], isLoading } = useQuery<FileAsset[]>({
@@ -484,11 +525,50 @@ export function FilesView() {
                   className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg"
                 />
               ) : previewFile.mimeType === 'application/pdf' || previewFile.name.endsWith('.pdf') ? (
-                <iframe
-                  src={previewFile.url}
-                  title={previewFile.name}
-                  className="w-full h-[70vh] rounded-xl border border-white/10"
-                />
+                <div className="w-full h-[75vh] flex flex-col rounded-xl overflow-hidden border border-white/10 bg-slate-900">
+                  {pdfBlobUrl ? (
+                    <object
+                      data={pdfBlobUrl}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <iframe
+                        src={pdfBlobUrl}
+                        title={previewFile.name}
+                        className="w-full h-full"
+                      />
+                      <div className="flex flex-col items-center justify-center p-8 text-center h-full">
+                        <FileText size={48} className="text-[#8ea9e8] mb-3" />
+                        <p className="text-sm font-semibold text-foreground mb-1">{previewFile.name}</p>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          Your browser cannot display this embedded PDF directly.
+                        </p>
+                        <div className="flex gap-3">
+                          <a
+                            href={pdfBlobUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#7864F6] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#6c56f5]"
+                          >
+                            <ExternalLink size={14} /> Open PDF in New Tab
+                          </a>
+                          <a
+                            href={previewFile.url}
+                            download={previewFile.name}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20"
+                          >
+                            <Download size={14} /> Download PDF
+                          </a>
+                        </div>
+                      </div>
+                    </object>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                      <div className="h-10 w-10 animate-spin rounded-full border-2 border-sky-400 border-t-transparent mb-3" />
+                      <p className="text-xs text-muted-foreground">Preparing PDF document...</p>
+                    </div>
+                  )}
+                </div>
               ) : previewFile.mimeType.startsWith('audio/') ||
                 previewFile.name.match(/\.(mp3|wav|ogg|m4a)$/i) ? (
                 <div className="flex flex-col items-center gap-4 p-8">
