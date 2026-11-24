@@ -12,39 +12,37 @@ import {
   Timer,
   Wallet,
   Bookmark,
-  GraduationCap,
   BookHeart,
   Layers,
   Folder,
   Settings,
   LogOut,
   Search,
-  Menu,
-  ShieldCheck,
   ChevronDown,
-  X,
   Bell,
 } from 'lucide-react';
 import { api, setCsrf } from '@/lib/api';
 import type { Session } from '@/lib/types';
 import { SessionContext } from '@/hooks/use-session';
-import { useUI } from '@/store/ui';
 import { Button } from '@/components/ui/button';
 import { FormModal } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { MacDock, type DockItemData } from './mac-dock';
 import { toast } from 'sonner';
 
-const modules = [
-  ['Tasks', CheckSquare, '/tasks'],
-  ['Notes', BookHeart, '/notes'],
-  ['Calendar', CalendarDays, '/calendar'],
-  ['AI Assistant', Sparkles, '/assistant'],
-  ['Productivity', Timer, '/productivity'],
-  ['Expenses', Wallet, '/expenses'],
-  ['Bookmarks', Bookmark, '/bookmarks'],
-  ['Projects', Layers, '/projects'],
-  ['Files', Folder, '/files'],
-] as const;
+const navItems: DockItemData[] = [
+  { title: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  { title: 'Tasks', icon: CheckSquare, href: '/tasks' },
+  { title: 'Notes', icon: BookHeart, href: '/notes' },
+  { title: 'Calendar', icon: CalendarDays, href: '/calendar' },
+  { title: 'AI Assistant', icon: Sparkles, href: '/assistant' },
+  { title: 'Productivity', icon: Timer, href: '/productivity' },
+  { title: 'Expenses', icon: Wallet, href: '/expenses' },
+  { title: 'Bookmarks', icon: Bookmark, href: '/bookmarks' },
+  { title: 'Projects', icon: Layers, href: '/projects' },
+  { title: 'Files', icon: Folder, href: '/files' },
+  { title: 'Settings', icon: Settings, href: '/settings' },
+];
 
 export function Workspace({
   initialSession,
@@ -56,9 +54,7 @@ export function Workspace({
   const router = useRouter(),
     pathname = usePathname(),
     client = useQueryClient();
-  const { sidebarOpen, setSidebarOpen } = useUI();
-  const [planned, setPlanned] = useState(''),
-    [search, setSearch] = useState(false),
+  const [search, setSearch] = useState(false),
     [term, setTerm] = useState(''),
     [logout, setLogout] = useState(false),
     [busy, setBusy] = useState(false),
@@ -103,103 +99,33 @@ export function Workspace({
         Skip to content
       </a>
       <div className="ambient" aria-hidden="true" />
-      {sidebarOpen && (
-        <button
-          className="fixed inset-0 z-20 bg-slate-950/70 backdrop-blur-sm lg:hidden"
-          aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
-      {/* Glassmorphic Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-        <Link
-          className="mb-6 flex items-center gap-3 px-2 shrink-0 group"
-          href="/dashboard"
-          onClick={() => setSidebarOpen(false)}
-        >
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/20 shadow-md group-hover:scale-105 transition-transform">
-            <Image
-              src="/buddio-icon.png"
-              alt="Buddio"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-foreground">
-            Buddio
-          </span>
-        </Link>
-
-        <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[.22em] text-[#8ea9e8]/80 shrink-0">
-          Your workspace
-        </div>
-
-        <nav aria-label="Main navigation" className="space-y-0.5">
-          <Link
-            href="/dashboard"
-            onClick={() => setSidebarOpen(false)}
-            className={`nav-item ${pathname === '/dashboard' ? 'selected' : ''}`}
-            aria-current={pathname === '/dashboard' ? 'page' : undefined}
-          >
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
-          </Link>
-          {modules.map(([title, Icon, path]) => (
-            <Link
-              key={title}
-              href={path}
-              onClick={() => setSidebarOpen(false)}
-              className={`nav-item ${pathname === path ? 'selected' : ''}`}
-              aria-current={pathname === path ? 'page' : undefined}
-            >
-              <Icon size={18} />
-              <span>{title}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="mt-auto pt-6 border-t border-white/10 shrink-0">
-          <Link
-            href="/settings"
-            onClick={() => setSidebarOpen(false)}
-            className={`nav-item ${pathname === '/settings' ? 'selected' : ''}`}
-          >
-            <Settings size={18} />
-            <span>Settings</span>
-          </Link>
-          <button
-            className="nav-item w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
-            onClick={() => {
-              setSidebarOpen(false);
-              setLogout(true);
-            }}
-          >
-            <LogOut size={18} />
-            <span>Log out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Workspace Frame */}
+      {/* Main Workspace Frame (Full Width Layout without fixed sidebar) */}
       <div className="workspace">
-        {/* Glassmorphic Top Navbar */}
+        {/* Minimal Glassmorphic Top Navbar */}
         <header className="topbar">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="lg:hidden"
-            aria-label="Open navigation"
-            onClick={() => setSidebarOpen(true)}
+          <Link
+            className="flex items-center gap-3 shrink-0 group mr-2 sm:mr-4"
+            href="/dashboard"
           >
-            <Menu size={20} />
-          </Button>
+            <div className="relative h-8 w-8 sm:h-9 sm:w-9 shrink-0 overflow-hidden rounded-xl border border-white/20 shadow-md group-hover:scale-105 transition-transform">
+              <Image
+                src="/buddio-icon.png"
+                alt="Buddio"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+              Buddio
+            </span>
+          </Link>
 
           <button className="search-trigger" onClick={() => setSearch(true)}>
             <Search size={16} className="text-[#8ea9e8]" />
             <span className="hidden sm:inline">Search pages, tasks, notes…</span>
-            <span className="sm:hidden">Search</span>
+            <span className="sm:hidden text-xs">Search…</span>
             <kbd className="hidden sm:inline-block ml-4 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-muted-foreground">
               ⌘K
             </kbd>
@@ -224,71 +150,35 @@ export function Workspace({
             <Bell size={18} className="text-muted-foreground hover:text-foreground" />
           </Button>
 
-          <Link href="/settings" className="profile-link" aria-label="Open profile settings">
-            <span className="avatar">{session.owner.name.slice(0, 1).toUpperCase()}</span>
-            <span className="hidden text-xs font-semibold text-foreground sm:block">{session.owner.name}</span>
-            <ChevronDown size={13} className="text-muted-foreground" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/settings" className="profile-link" aria-label="Open profile settings">
+              <span className="avatar">{session.owner.name.slice(0, 1).toUpperCase()}</span>
+              <span className="hidden text-xs font-semibold text-foreground sm:block">{session.owner.name}</span>
+              <ChevronDown size={13} className="text-muted-foreground" />
+            </Link>
+
+            <button
+              onClick={() => setLogout(true)}
+              className="rounded-xl p-2 text-muted-foreground hover:text-red-300 hover:bg-red-500/10 transition"
+              title="Log out"
+              aria-label="Log out"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </header>
 
-        {/* Workspace Children Content */}
-        <main id="main" className="main-content pb-28 lg:pb-12">
+        {/* Workspace Children Content with bottom clearance for floating macOS Dock */}
+        <main id="main" className="main-content pb-28 sm:pb-32">
           {children}
           <footer className="mt-14 hidden sm:flex justify-between border-t border-white/10 pt-6 text-xs text-muted-foreground">
             <span>A little clarity. A little progress.</span>
-            <span>TaskMate AI · Single-Owner Glassmorphism Suite</span>
+            <span>Buddio AI · Modern macOS Dock Suite</span>
           </footer>
         </main>
 
-        {/* Mobile PWA Bottom Glass Navigation Bar */}
-        <nav
-          aria-label="Mobile navigation"
-          className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-white/15 bg-[#101827]/85 px-3 backdrop-blur-2xl lg:hidden shadow-[0_-8px_32px_rgba(0,0,0,0.4)]"
-        >
-          <Link
-            href="/dashboard"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/dashboard' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <LayoutDashboard size={18} />
-            <span>Home</span>
-          </Link>
-          <Link
-            href="/tasks"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/tasks' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <CheckSquare size={18} />
-            <span>Tasks</span>
-          </Link>
-          <Link
-            href="/calendar"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/calendar' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <CalendarDays size={18} />
-            <span>Calendar</span>
-          </Link>
-          <Link
-            href="/assistant"
-            className={`flex flex-col items-center gap-1 text-[10px] font-medium transition ${
-              pathname === '/assistant' ? 'text-[#8ea9e8]' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Sparkles size={18} />
-            <span>AI</span>
-          </Link>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="flex flex-col items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition"
-          >
-            <Menu size={18} />
-            <span>More</span>
-          </button>
-        </nav>
+        {/* macOS-inspired Magnified Floating Bottom Dock */}
+        <MacDock items={navItems} />
       </div>
 
       {/* Global Quick Search Modal */}
@@ -309,7 +199,7 @@ export function Workspace({
           onChange={(e) => setTerm(e.target.value)}
           placeholder="Dashboard, tasks, notes, calendar, settings…"
         />
-        <div className="mt-4 grid gap-2">
+        <div className="mt-4 grid gap-2 max-h-72 overflow-y-auto pr-1">
           {[
             ['Dashboard', '/dashboard'],
             ['Tasks & Checklist', '/tasks'],

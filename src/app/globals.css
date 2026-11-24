@@ -198,7 +198,8 @@ html {
 }
 
 .workspace {
-  margin-left: 256px;
+  margin-left: 0;
+  width: 100%;
 }
 
 .topbar {
@@ -337,7 +338,7 @@ html {
     padding-right: 14px;
   }
   .workspace {
-    margin-left: 240px;
+    margin-left: 0;
   }
   .main-content {
     padding: 26px;
