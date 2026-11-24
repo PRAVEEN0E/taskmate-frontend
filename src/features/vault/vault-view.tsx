@@ -85,10 +85,19 @@ async function decryptSecret(ciphertext: string, ivStr: string, masterPin: strin
   return dec.decode(decrypted);
 }
 
+async function hashPin(pin: string): Promise<string> {
+  const enc = new TextEncoder();
+  const data = enc.encode(pin + '_buddio_vault_salt');
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+}
+
 export function VaultView() {
   const [masterPin, setMasterPin] = useState('');
   const [pinInput, setPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [hasMasterPin, setHasMasterPin] = useState<boolean | null>(null);
 
   // Vault Items in local storage (client-side encrypted)
   const [items, setItems] = useState<VaultItem[]>([]);
@@ -101,14 +110,19 @@ export function VaultView() {
   const [itemCategory, setItemCategory] = useState<'PASSWORD' | 'NOTE' | 'KEY'>('PASSWORD');
   const [itemSecret, setItemSecret] = useState('');
 
-  // Load encrypted vault from local storage
+  // Check if user has already set up a Master PIN
   useEffect(() => {
     try {
+      const pinHash = localStorage.getItem('buddio_vault_pin_hash');
+      setHasMasterPin(!!pinHash);
+
       const saved = localStorage.getItem('buddio_secret_vault');
       if (saved) {
         setItems(JSON.parse(saved));
       }
-    } catch {}
+    } catch {
+      setHasMasterPin(false);
+    }
   }, []);
 
   const saveItems = (newItems: VaultItem[]) => {
@@ -116,12 +130,40 @@ export function VaultView() {
     localStorage.setItem('buddio_secret_vault', JSON.stringify(newItems));
   };
 
-  const handleUnlock = async (e: React.FormEvent) => {
+  const handleSetupPin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pinInput.length < 4) {
       toast.error('Master PIN must be at least 4 characters');
       return;
     }
+    if (pinInput !== confirmPinInput) {
+      toast.error('PINs do not match. Please re-enter.');
+      return;
+    }
+
+    const hashed = await hashPin(pinInput);
+    localStorage.setItem('buddio_vault_pin_hash', hashed);
+    setHasMasterPin(true);
+    setMasterPin(pinInput);
+    setIsUnlocked(true);
+    setPinInput('');
+    setConfirmPinInput('');
+    toast.success('Master PIN created & Vault Unlocked!');
+  };
+
+  const handleUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinInput.trim()) return;
+
+    const storedHash = localStorage.getItem('buddio_vault_pin_hash');
+    const inputHash = await hashPin(pinInput);
+
+    if (storedHash && inputHash !== storedHash) {
+      toast.error('Incorrect PIN! Access denied.');
+      setPinInput('');
+      return;
+    }
+
     setMasterPin(pinInput);
     setIsUnlocked(true);
     setPinInput('');
@@ -226,27 +268,58 @@ export function VaultView() {
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-foreground">Unlock Private Vault</h3>
+            <h3 className="text-lg font-bold text-foreground">
+              {hasMasterPin ? 'Unlock Private Vault' : 'Set Up Vault Master PIN'}
+            </h3>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              Enter your Master PIN. All encryption occurs locally inside your browser using Web Cryptography API (AES-GCM 256).
+              {hasMasterPin
+                ? 'Enter your verified Master PIN to decrypt your vault items with AES-256.'
+                : 'Create a private Master PIN to protect your secret vault. Keep it safe — it cannot be reset.'}
             </p>
           </div>
 
-          <form onSubmit={handleUnlock} className="space-y-3 pt-2">
-            <input
-              type="password"
-              required
-              autoFocus
-              value={pinInput}
-              onChange={(e) => setPinInput(e.target.value)}
-              placeholder="Enter Master PIN..."
-              className="w-full text-center tracking-widest text-base rounded-xl border border-white/15 bg-black/40 px-4 py-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-            />
+          {hasMasterPin ? (
+            <form onSubmit={handleUnlock} className="space-y-3 pt-2">
+              <input
+                type="password"
+                required
+                autoFocus
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                placeholder="Enter Master PIN..."
+                className="w-full text-center tracking-widest text-base rounded-xl border border-white/15 bg-black/40 px-4 py-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+              />
 
-            <Button type="submit" className="w-full gap-2">
-              <Unlock size={15} /> Unlock Secrets
-            </Button>
-          </form>
+              <Button type="submit" className="w-full gap-2">
+                <Unlock size={15} /> Unlock Secrets
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleSetupPin} className="space-y-3 pt-2">
+              <input
+                type="password"
+                required
+                autoFocus
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                placeholder="Create Master PIN (min 4 chars)..."
+                className="w-full text-center tracking-widest text-sm rounded-xl border border-white/15 bg-black/40 px-4 py-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+              />
+
+              <input
+                type="password"
+                required
+                value={confirmPinInput}
+                onChange={(e) => setConfirmPinInput(e.target.value)}
+                placeholder="Confirm Master PIN..."
+                className="w-full text-center tracking-widest text-sm rounded-xl border border-white/15 bg-black/40 px-4 py-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+              />
+
+              <Button type="submit" className="w-full gap-2">
+                <ShieldCheck size={15} /> Initialize & Secure Vault
+              </Button>
+            </form>
+          )}
 
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/80 pt-2 border-t border-white/5">
             <ShieldCheck size={13} className="text-emerald-400" />
