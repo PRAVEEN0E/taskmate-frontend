@@ -579,20 +579,35 @@ export function TasksView() {
           })}
         </div>
       ) : (
-        /* Kanban Board View */
+        /* Interactive Drag-and-Drop Kanban Board View */
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {(
             [
-              ['TODO', 'To Do'],
-              ['IN_PROGRESS', 'In Progress'],
-              ['COMPLETED', 'Completed'],
+              ['TODO', 'To Do', 'border-sky-500/20 bg-sky-500/5', 'text-sky-300'],
+              ['IN_PROGRESS', 'In Progress', 'border-amber-500/20 bg-amber-500/5', 'text-amber-300'],
+              ['COMPLETED', 'Completed', 'border-emerald-500/20 bg-emerald-500/5', 'text-emerald-300'],
             ] as const
-          ).map(([colStatus, colTitle]) => {
+          ).map(([colStatus, colTitle, colGlow, colText]) => {
             const colTasks = filteredTasks.filter((t) => t.status === colStatus);
             return (
-              <div key={colStatus} className="space-y-3 rounded-2xl border border-border bg-black/25 p-4">
-                <div className="flex items-center justify-between border-b border-border pb-2.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div
+                key={colStatus}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const taskId = e.dataTransfer.getData('text/plain');
+                  if (taskId) {
+                    toggleTaskStatusMutation.mutate({ id: taskId, status: colStatus });
+                    toast.success(`Moved to ${colTitle}`);
+                  }
+                }}
+                className={`space-y-3 rounded-2xl border p-4 backdrop-blur-md transition ${colGlow}`}
+              >
+                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${colText}`}>
                     {colTitle}
                   </span>
                   <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold">
@@ -600,18 +615,27 @@ export function TasksView() {
                   </span>
                 </div>
 
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                <div className="space-y-3 min-h-[220px] max-h-[620px] overflow-y-auto pr-1">
                   {colTasks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-muted-foreground">No tasks</div>
+                    <div className="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 text-center text-xs text-muted-foreground">
+                      <span>Drag tasks here</span>
+                    </div>
                   ) : (
                     colTasks.map((task) => (
                       <div
                         key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', task.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
                         onClick={() => setSelectedTask(task)}
-                        className="glass rounded-2xl p-3.5 cursor-pointer hover:border-sky-500/40 transition space-y-2.5"
+                        className="group glass rounded-2xl p-3.5 cursor-grab active:cursor-grabbing hover:border-sky-500/50 hover:shadow-lg transition space-y-2.5"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-xs font-semibold line-clamp-2">{task.title}</h4>
+                          <h4 className={`text-xs font-semibold line-clamp-2 ${task.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {task.title}
+                          </h4>
                           <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase ${priorityTag(task.priority)}`}>
                             {task.priority}
                           </span>
@@ -619,23 +643,27 @@ export function TasksView() {
                         {task.description && (
                           <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>
                         )}
-                        <div className="flex items-center justify-between border-t border-border pt-2 text-[10px] text-muted-foreground">
-                          {task.dueAt && (
+                        <div className="flex items-center justify-between border-t border-white/5 pt-2 text-[10px] text-muted-foreground">
+                          {task.dueAt ? (
                             <span className="flex items-center gap-1">
                               <Calendar size={11} />
                               {new Date(task.dueAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                             </span>
+                          ) : (
+                            <span className="text-[10px] opacity-40">No due date</span>
                           )}
-                          <div className="flex gap-1 ml-auto">
+
+                          <div className="flex items-center gap-1">
                             {colStatus !== 'TODO' && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   toggleTaskStatusMutation.mutate({ id: task.id, status: 'TODO' });
                                 }}
-                                className="hover:text-foreground text-[11px]"
+                                title="Move to To Do"
+                                className="rounded px-1.5 py-0.5 hover:bg-white/10 text-[11px]"
                               >
-                                ←
+                                ← To Do
                               </button>
                             )}
                             {colStatus !== 'IN_PROGRESS' && (
@@ -644,9 +672,10 @@ export function TasksView() {
                                   e.stopPropagation();
                                   toggleTaskStatusMutation.mutate({ id: task.id, status: 'IN_PROGRESS' });
                                 }}
-                                className="hover:text-foreground text-[11px]"
+                                title="Move to In Progress"
+                                className="rounded px-1.5 py-0.5 hover:bg-white/10 text-[11px]"
                               >
-                                {colStatus === 'TODO' ? '→' : '←'}
+                                {colStatus === 'TODO' ? 'In Progress →' : '← In Prog'}
                               </button>
                             )}
                             {colStatus !== 'COMPLETED' && (
@@ -655,9 +684,10 @@ export function TasksView() {
                                   e.stopPropagation();
                                   toggleTaskStatusMutation.mutate({ id: task.id, status: 'COMPLETED' });
                                 }}
-                                className="hover:text-foreground text-[11px]"
+                                title="Mark Completed"
+                                className="rounded px-1.5 py-0.5 hover:bg-white/10 text-[11px] text-emerald-300"
                               >
-                                →
+                                Done ✓
                               </button>
                             )}
                           </div>

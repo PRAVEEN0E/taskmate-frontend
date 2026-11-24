@@ -17,6 +17,7 @@ import {
   Folder,
   Settings,
   Users,
+  KeyRound,
   LogOut,
   Search,
   ChevronDown,
@@ -42,6 +43,7 @@ const navItems: DockItemData[] = [
   { title: 'Bookmarks', icon: Bookmark, href: '/bookmarks' },
   { title: 'Projects', icon: Layers, href: '/projects' },
   { title: 'Groups', icon: Users, href: '/groups' },
+  { title: 'Vault', icon: KeyRound, href: '/vault' },
   { title: 'Files', icon: Folder, href: '/files' },
   { title: 'Settings', icon: Settings, href: '/settings' },
 ];
