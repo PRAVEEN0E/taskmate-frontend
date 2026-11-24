@@ -20,6 +20,8 @@ import {
   Upload,
   Link as LinkIcon,
   CheckCircle2,
+  Eye,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -44,6 +46,7 @@ export function FilesView() {
   const [bytes, setBytes] = useState(250000);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [previewFile, setPreviewFile] = useState<FileAsset | null>(null);
 
   // 1. Fetch Files
   const { data: rawFiles = [], isLoading } = useQuery<FileAsset[]>({
@@ -262,7 +265,14 @@ export function FilesView() {
 
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-2.5 text-[11px] text-muted-foreground">
                   <span>{(Number(f.bytes) / 1024).toFixed(1)} KB</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => setPreviewFile(f)}
+                      className="flex items-center gap-1 text-[#8ea9e8] hover:text-white transition font-medium cursor-pointer"
+                      title="View file"
+                    >
+                      <Eye size={13} /> View
+                    </button>
                     {f.url.startsWith('data:') ? (
                       <a
                         href={f.url}
@@ -416,6 +426,120 @@ export function FilesView() {
           </div>
         </form>
       </FormModal>
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-white/20 bg-[#101827]/95 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-white/[0.03]">
+              <div className="flex items-center gap-3 min-w-0 pr-4">
+                {getFileIcon(previewFile.mimeType)}
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground truncate" title={previewFile.name}>
+                    {previewFile.name}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {(Number(previewFile.bytes) / 1024).toFixed(1)} KB · {previewFile.mimeType || 'Unknown format'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {previewFile.url.startsWith('data:') ? (
+                  <a
+                    href={previewFile.url}
+                    download={previewFile.name}
+                    className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-white/20 transition"
+                  >
+                    <Download size={13} /> Download
+                  </a>
+                ) : (
+                  <a
+                    href={previewFile.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-sky-400 hover:bg-white/20 transition"
+                  >
+                    <ExternalLink size={13} /> Open Original
+                  </a>
+                )}
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="rounded-xl p-2 text-muted-foreground hover:bg-white/10 hover:text-white transition"
+                  aria-label="Close Preview"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-[300px] max-h-[calc(90vh-80px)] bg-black/40">
+              {previewFile.mimeType.startsWith('image/') ||
+              previewFile.name.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i) ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg"
+                />
+              ) : previewFile.mimeType === 'application/pdf' || previewFile.name.endsWith('.pdf') ? (
+                <iframe
+                  src={previewFile.url}
+                  title={previewFile.name}
+                  className="w-full h-[70vh] rounded-xl border border-white/10"
+                />
+              ) : previewFile.mimeType.startsWith('audio/') ||
+                previewFile.name.match(/\.(mp3|wav|ogg|m4a)$/i) ? (
+                <div className="flex flex-col items-center gap-4 p-8">
+                  <div className="h-16 w-16 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400 shadow-inner">
+                    <FileText size={32} />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">{previewFile.name}</p>
+                  <audio controls className="w-full max-w-md">
+                    <source src={previewFile.url} type={previewFile.mimeType} />
+                    Your browser does not support audio playback.
+                  </audio>
+                </div>
+              ) : previewFile.mimeType.startsWith('video/') ||
+                previewFile.name.match(/\.(mp4|webm|mov)$/i) ? (
+                <video controls className="max-h-[70vh] max-w-full rounded-xl shadow-lg">
+                  <source src={previewFile.url} type={previewFile.mimeType} />
+                  Your browser does not support video playback.
+                </video>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
+                  <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center text-muted-foreground border border-white/10">
+                    {getFileIcon(previewFile.mimeType)}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{previewFile.name}</p>
+                  <p className="text-xs text-muted-foreground max-w-md">
+                    Preview is not supported directly in-browser for this format ({previewFile.mimeType || 'Binary'}). Click download or open original to view.
+                  </p>
+                  {previewFile.url.startsWith('data:') ? (
+                    <a
+                      href={previewFile.url}
+                      download={previewFile.name}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[#7864F6] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#6c56f5]"
+                    >
+                      <Download size={14} /> Download File
+                    </a>
+                  ) : (
+                    <a
+                      href={previewFile.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[#7864F6] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#6c56f5]"
+                    >
+                      <ExternalLink size={14} /> Open in New Tab
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
