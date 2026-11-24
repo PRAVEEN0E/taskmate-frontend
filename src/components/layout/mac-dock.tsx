@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
@@ -18,58 +18,11 @@ interface DockProps {
 export function MacDock({ items }: DockProps) {
   const pathname = usePathname();
   const pointerX = useMotionValue<number>(Infinity);
-  const scrollOffset = useMotionValue<number>(0);
-  const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInteractingRef = useRef<boolean>(false);
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
-
-  // Update center focus position during mobile touch swipe / scroll
-  const handleScroll = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const scrollPos = el.scrollLeft;
-    scrollOffset.set(scrollPos);
-
-    if (isTouchDevice) {
-      setIsScrolling(true);
-      // Center position of container on screen
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      pointerX.set(centerX);
-
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-        // After scrolling stops, smoothly return all icons to normal resting size
-        pointerX.set(Infinity);
-      }, 450);
-    }
-  }, [isTouchDevice, pointerX, scrollOffset]);
-
-  // Touch Move / Drag continuous tracking
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length > 0) {
-      setIsScrolling(true);
-      const touch = e.touches[0];
-      pointerX.set(touch.clientX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      setIsScrolling(false);
-      pointerX.set(Infinity);
-    }, 400);
-  };
-
-  // Center active element on route change
+  // Auto-scroll active item into view on route change
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -78,6 +31,33 @@ export function MacDock({ items }: DockProps) {
       activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   }, [pathname]);
+
+  // Touch handlers: Update pointerX directly WITHOUT triggering React state re-renders (zero jitter!)
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    isInteractingRef.current = true;
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+    if (e.touches.length > 0) {
+      pointerX.set(e.touches[0].clientX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+    resetTimeoutRef.current = setTimeout(() => {
+      isInteractingRef.current = false;
+      pointerX.set(Infinity);
+    }, 350);
+  };
+
+  // Horizontal scroll within dock track updates center-focus magnification
+  const handleTrackScroll = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    if (isInteractingRef.current) {
+      const rect = el.getBoundingClientRect();
+      pointerX.set(rect.left + rect.width / 2);
+    }
+  };
 
   return (
     <nav
@@ -88,26 +68,34 @@ export function MacDock({ items }: DockProps) {
         transform: 'translate3d(0, 0, 0)',
         WebkitTransform: 'translate3d(0, 0, 0)',
         willChange: 'transform',
+        contain: 'layout style',
       }}
     >
-      {/* Sleek Minimal macOS Floating Dock (No clipping, overflow visible so enlarged icons pop up) */}
+      {/* Sleek Minimal macOS Floating Dock (Fixed height, overflow visible so icons pop up cleanly) */}
       <div
-        ref={containerRef}
         onMouseLeave={() => pointerX.set(Infinity)}
-        className="pointer-events-auto relative max-w-[94vw] sm:max-w-2xl rounded-2xl border border-white/[0.12] bg-[#101827]/75 backdrop-blur-2xl shadow-[0_16px_36px_rgba(0,0,0,0.55),0_1px_0_rgba(255,255,255,0.12)_inset] px-2 sm:px-3 pt-2 pb-1.5 overflow-visible"
+        className="pointer-events-auto relative max-w-[94vw] sm:max-w-2xl h-[56px] flex items-center rounded-2xl border border-white/[0.12] bg-[#101827]/85 backdrop-blur-2xl shadow-[0_16px_36px_rgba(0,0,0,0.55),0_1px_0_rgba(255,255,255,0.12)_inset] px-2 sm:px-3 overflow-visible"
+        style={{
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
+        }}
       >
-        {/* Horizontal scroll track with hidden scrollbars and generous padding to avoid clipping */}
+        {/* Horizontal scroll track with hidden scrollbar */}
         <div
           ref={trackRef}
-          onScroll={handleScroll}
+          onScroll={handleTrackScroll}
+          onTouchStart={() => {
+            isInteractingRef.current = true;
+          }}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="flex items-end gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth pt-3 pb-1 px-1 touch-pan-x"
+          onTouchCancel={handleTouchEnd}
+          className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth h-full px-1 touch-pan-x"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
-            overscrollBehaviorX: 'contain',
+            overscrollBehavior: 'contain',
           }}
         >
           {items.map((item) => (
@@ -116,7 +104,6 @@ export function MacDock({ items }: DockProps) {
               item={item}
               pointerX={pointerX}
               isActive={pathname === item.href}
-              isScrolling={isScrolling}
             />
           ))}
         </div>
@@ -129,14 +116,13 @@ interface DockIconProps {
   item: DockItemData;
   pointerX: any;
   isActive: boolean;
-  isScrolling: boolean;
 }
 
-function DockIcon({ item, pointerX, isActive, isScrolling }: DockIconProps) {
+function DockIcon({ item, pointerX, isActive }: DockIconProps) {
   const iconRef = useRef<HTMLAnchorElement>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Calculate distance between icon center and pointer/center focus
+  // Distance calculation based on pointerX
   const distance = useTransform(pointerX, (x: number) => {
     if (x === Infinity || x === null || x === undefined) return Infinity;
     const bounds = iconRef.current?.getBoundingClientRect();
@@ -145,42 +131,27 @@ function DockIcon({ item, pointerX, isActive, isScrolling }: DockIconProps) {
     return x - iconCenter;
   });
 
-  // Base icon width: 40px resting, scaling up to 58px on focus/hover
-  // Adjacent icons scale smoothly based on Gaussian-like curve
-  const sizeSync = useTransform(
+  // Smooth scale transform: icons keep rigid fixed footprint (40px) while visual element magnifies and pops up
+  // This guarantees zero container reflow or width jitter!
+  const iconScaleSync = useTransform(
     distance,
     [-110, -55, 0, 55, 110],
-    [40, 48, 58, 48, 40]
+    [1.0, 1.18, 1.42, 1.18, 1.0]
   );
-  const size = useSpring(sizeSync, { mass: 0.1, stiffness: 220, damping: 18 });
+  const iconScale = useSpring(iconScaleSync, { mass: 0.1, stiffness: 240, damping: 20 });
 
-  // Upward elevation pop when magnified (moves outside container naturally)
+  // Upward elevation pop
   const ySync = useTransform(
     distance,
     [-110, -55, 0, 55, 110],
     [0, -4, -12, -4, 0]
   );
-  const y = useSpring(ySync, { mass: 0.1, stiffness: 220, damping: 18 });
-
-  // Icon internal scale
-  const iconScaleSync = useTransform(
-    distance,
-    [-110, -55, 0, 55, 110],
-    [1.0, 1.15, 1.35, 1.15, 1.0]
-  );
-  const iconScale = useSpring(iconScaleSync, { mass: 0.1, stiffness: 220, damping: 18 });
+  const y = useSpring(ySync, { mass: 0.1, stiffness: 240, damping: 20 });
 
   const Icon = item.icon;
 
   return (
-    <motion.div
-      style={{
-        width: size,
-        height: size,
-        y: y,
-      }}
-      className="relative flex flex-col items-center justify-end shrink-0 select-none"
-    >
+    <div className="relative w-10 h-10 flex items-center justify-center shrink-0 select-none">
       <Link
         ref={iconRef}
         href={item.href}
@@ -188,18 +159,20 @@ function DockIcon({ item, pointerX, isActive, isScrolling }: DockIconProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onMouseMove={(e) => pointerX.set(e.clientX)}
-        className="relative flex h-full w-full items-center justify-center cursor-pointer transition-colors duration-150 rounded-xl"
+        className="relative flex h-full w-full items-center justify-center cursor-pointer rounded-xl"
         style={{
-          /* NO individual card, box, borders, or permanent elevated background */
           background: 'transparent',
           border: 'none',
           boxShadow: 'none',
         }}
       >
-        {/* Bare Icon with fluid magnification */}
+        {/* Animated Icon: Scales & pops upward without changing slot width */}
         <motion.div
-          style={{ scale: iconScale }}
-          className={`flex items-center justify-center transition-colors duration-200 ${
+          style={{
+            scale: iconScale,
+            y: y,
+          }}
+          className={`flex items-center justify-center transition-colors duration-150 ${
             isActive
               ? 'text-white drop-shadow-[0_0_8px_rgba(142,169,232,0.85)]'
               : 'text-slate-300 hover:text-white'
@@ -208,18 +181,18 @@ function DockIcon({ item, pointerX, isActive, isScrolling }: DockIconProps) {
           <Icon size={22} strokeWidth={isActive ? 2.2 : 1.9} />
         </motion.div>
 
-        {/* macOS Active App Indicator Dot (Clean, subtle, non-elevated) */}
+        {/* macOS Active App Indicator Dot */}
         {isActive && (
-          <span className="absolute -bottom-1.5 h-1 w-1 rounded-full bg-[#8ea9e8] shadow-[0_0_5px_#8ea9e8]" />
+          <span className="absolute bottom-0 h-1 w-1 rounded-full bg-[#8ea9e8] shadow-[0_0_5px_#8ea9e8]" />
         )}
 
-        {/* macOS Tooltip on Desktop Hover or Active Focus */}
-        {hovered && !isScrolling && (
-          <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 rounded-md border border-white/10 bg-[#162032]/95 px-2 py-0.5 text-[11px] font-medium text-white shadow-xl backdrop-blur-md whitespace-nowrap z-50">
+        {/* Desktop Tooltip */}
+        {hovered && (
+          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 rounded-md border border-white/10 bg-[#162032]/95 px-2 py-0.5 text-[11px] font-medium text-white shadow-xl backdrop-blur-md whitespace-nowrap z-50">
             {item.title}
           </div>
         )}
       </Link>
-    </motion.div>
+    </div>
   );
 }
